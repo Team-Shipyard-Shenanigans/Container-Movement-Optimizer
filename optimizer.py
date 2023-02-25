@@ -1,6 +1,7 @@
 """
 Optimizer module contains functions relating to performing A* search on the ship grid given a task.
 """
+import container as Container
 
 
 def get_child(state, task):
@@ -18,6 +19,6 @@ def get_child(state, task):
     return state
 
 
-def apply_operations(container, operation):
+def apply_operations(container=Container.Container(), operation=0):
     """Updates a container's state given an operation"""
     return

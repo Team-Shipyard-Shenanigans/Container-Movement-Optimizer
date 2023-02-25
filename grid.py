@@ -2,6 +2,7 @@
 An interface for grid objects like Buffer and ShipBay
 """
 from abc import ABC, abstractmethod
+import container as Container
 
 
 class Grid(ABC):
@@ -11,7 +12,9 @@ class Grid(ABC):
 
     @abstractmethod
     def index_mapper(self, value):
-        pass
+        """
+        Abstract method for subclasses of the grid class to specify their own mapping
+        """
 
 
 class Buffer(Grid):
@@ -26,8 +29,8 @@ class Buffer(Grid):
 
     def index_mapper(self, value):
         """
-        ## Parameters: an integer
-        ## Output: the mapping of the integer from the index of a 1x96 vector to the indices of a 4x24 matrix.
+        Parameters: an integer
+        Output: indices converted of the corresponding 4x24 matrix.
         """
         row_index = 0
         col_index = 0
@@ -55,8 +58,8 @@ class ShipBay(Grid):
 
     def index_mapper(self, value):
         """
-        ## Parameters: an integer
-        ## Output: the mapping of the integer from the index of a 1x96 vector to the indices of a 8x12 matrix.
+        Parameters: an integer
+        Output: indices converted of the corresponding 8x12 matrix.
         """
         row_index = 0
         col_index = 0
@@ -69,3 +72,14 @@ class ShipBay(Grid):
             row_index = int(value / 12)
             col_index = value % 12
         return (row_index, col_index)
+
+    def add_container(self, container=Container.Container()):
+        """Adds given container to the location specified by the container."""
+        indices = container.get_location()
+        self.grid[indices[0]][indices[1]] = container
+
+    def move_container(self, container=Container.Container(), column=0):
+
+        
+        
+        
