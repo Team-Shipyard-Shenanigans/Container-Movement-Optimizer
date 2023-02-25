@@ -1,5 +1,10 @@
-## Helper function to get the child state given preset operators
+"""
+Optimizer module contains functions relating to performing A* search on the ship grid given a task.
+"""
+
+
 def get_child(state, task):
+    """Gets the children of possible actions to take"""
     children = []
     if task == "loading":
         for i in range(0, 13):
@@ -14,4 +19,5 @@ def get_child(state, task):
 
 
 def apply_operations(container, operation):
+    """Updates a container's state given an operation"""
     return
