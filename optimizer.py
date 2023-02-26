@@ -4,21 +4,42 @@ Optimizer module contains functions relating to performing A* search on the ship
 import container as Container
 
 
-def get_child(state, task):
+def onload(bay, container_onload_list, container_offload_list):
+    return
+
+
+def balance(bay):
+    return
+
+
+def get_child(bay, buffer, task):
     """Gets the children of possible actions to take"""
     children = []
     if task == "loading":
-        for i in range(0, 13):
-            children.append(apply_operations(state, i))
+        children.append(apply_load_operations(bay, buffer, g))
     elif task == "balance":
-        for i in range(0, 12):
-            children.append(apply_operations(state, i))
+        children.append(apply_balance_operations(bay, buffer,))
     else:
         raise ValueError('Invalid task, must be "loading" or "balance"')
 
-    return state
+    return bay
 
 
-def apply_operations(container=Container.Container(), operation=0):
-    """Updates a container's state given an operation"""
+def get_containers(bay, buffer, container=Container.Container()):
+    """Gets all target containers based on description"""
+    container_array = []
+    for i in bay:
+        for j in i:
+            if j.get_description() == container.get_description():
+                container_array.append(j)
+    return container_array
+
+
+def apply_load_operations(bay, buffer, container_array):
+    """Gets all target containers based on description"""
+
+    return container_array
+
+
+def apply_balance_operations(bay):
     return

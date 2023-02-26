@@ -77,9 +77,5 @@ class ShipBay(Grid):
         """Adds given container to the location specified by the container."""
         indices = container.get_location()
         self.grid[indices[0]][indices[1]] = container
+                    
 
-    def move_container(self, container=Container.Container(), column=0):
-
-        
-        
-        

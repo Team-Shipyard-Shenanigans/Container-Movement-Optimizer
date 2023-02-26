@@ -23,6 +23,10 @@ class Container:
         """Gets the current container's location"""
         return self.location
 
+    def get_description(self):
+        """Returns the container's description as in the manifest"""
+        return self.description
+
     def get_cost(self, location):
         """Returns the Manhattan distance cost of a movement from the container's current location to a destination"""
         return abs(self.location[0] - location[0]) + abs(self.location[1] - location[1])
