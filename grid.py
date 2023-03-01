@@ -10,19 +10,26 @@ class Grid(ABC):
     An interface for grid objects like Buffer and ShipBay
     """
 
+    grid = []
+    stacks = []
+
     @abstractmethod
     def index_mapper(self, value):
         """
         Abstract method for subclasses of the grid class to specify their own mapping
         """
 
+    def get_stacks(self):
+        return self.stacks
+
+    def get_grid(self):
+        return self.grid
+
 
 class Buffer(Grid):
     """
     The class representing the buffer with appropriate grid size.
     """
-
-    grid = []
 
     def __init__(self):
         pass
@@ -51,8 +58,6 @@ class ShipBay(Grid):
     The class representing the ship bay with appropriate grid size.
     """
 
-    grid = []
-
     def __init__(self):
         pass
 
@@ -77,5 +82,3 @@ class ShipBay(Grid):
         """Adds given container to the location specified by the container."""
         indices = container.get_location()
         self.grid[indices[0]][indices[1]] = container
-                    
-

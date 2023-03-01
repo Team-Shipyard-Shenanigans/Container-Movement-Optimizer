@@ -9,11 +9,12 @@ class Container:
     description = "{EMPTY}"
     location = (0, 0)
     weight = 0
+    on_ship = True
 
-    def __init__(self, location=(0, 0), weight=0, description="{EMPTY}") -> None:
-        self.location = location
+    def __init__(self, weight=0, description="{EMPTY}", on_ship=True) -> None:
         self.weight = weight
         self.description = description
+        self.on_ship = on_ship
 
     def move(self, location):
         """Updates location to new value"""
@@ -30,3 +31,6 @@ class Container:
     def get_cost(self, location):
         """Returns the Manhattan distance cost of a movement from the container's current location to a destination"""
         return abs(self.location[0] - location[0]) + abs(self.location[1] - location[1])
+
+    def is_on_ship(self):
+        return self.on_ship
