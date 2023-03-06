@@ -74,10 +74,8 @@ class Optimizer:
             dest_column = i.get_column()
             dest_height = i.get_height()
             if dest_column != origin_column:
-                if i.get_height() <= 7:
-                    height = dest_height
-                    if abs(dest_column - origin_column) > 1:
-                        height = max(j.get_height() for j in self.bay.get_stacks()[min(dest_column, origin_column) + 1 : max(dest_column, origin_column) - 1])
-                    temp_cost = abs(dest_column - origin_column) + abs(height - stack.get_height() - 1) + abs(height - dest_height)
-                    min_cost = (temp_cost, i, height) if min_cost[0] >= temp_cost else min_cost
+                    #height = max(j.get_height() for j in self.bay.get_stacks()[min(dest_column, origin_column) + 1 : max(dest_column, origin_column) - 1])
+                    #temp_cost = abs(dest_column - origin_column) + abs(height - stack.get_height() - 1) + abs(height - dest_height)
+                temp_cost = abs(dest_column - origin_column) + 
+                min_cost = (temp_cost, i, height) if min_cost[0] >= temp_cost else min_cost
         return min_cost
