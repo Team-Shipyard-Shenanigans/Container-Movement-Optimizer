@@ -45,3 +45,6 @@ class Container:
 
     def __repr__(self):
         return "[%s, %s, %s]" % (self.description, self.location, self.on_ship)
+
+    def manifest_format(self):
+        return "[%02d, %02d], \{%05d\}, %s]" % (9 - self.location[0], self.location[1], self.weight, self.description)
