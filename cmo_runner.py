@@ -9,7 +9,7 @@ import time
 
 class Runner:
     manifest = open()
-    manifest_path = 
+    manifest_path = ""
     log_path = "".join(["C:/CMO/logs/KeoghLongBeach", time.localtime()[0], ".txt"])
     log = None
     gui = None
@@ -24,8 +24,8 @@ class Runner:
 
     offload_list = []
     onload_list = []
-
-    states = {1: "Init", 2: "Log In", 3: "Wait Manifest", 4:"Select Task" , 5: "Loading", 6: "Balancing", 7:"Calculating", 8: "Animating", 9: "Update Manifest", 10: "Stopping", 11:"Resetting"}
+    state = None
+    states = {1: "Init", 2: "Log In", 3: "Wait Manifest", 4: "Select Task", 5: "Loading", 6: "Balancing", 7: "Calculating", 8: "Animating", 9: "Update Manifest", 10: "Stopping", 11: "Resetting"}
 
     def __init__(self):
         # self.gui = GUI.GUI()
@@ -48,47 +48,47 @@ class Runner:
         pass
 
     def update_manifest(self):
-        #TODO add new manifest format function
+        # TODO add new manifest format function
         manifest = open("", "w")
-        for i in self.ship_bay:
+        for i in self.ship_bay.get_grid():
             for j in i:
                 manifest.write(j.manifest_format())
 
-    def log_in():
-        pass
-    
-    def task_selection():
+    def log_in(self):
         pass
 
-    def calculate_loading():
+    def task_selection(self):
         pass
 
-    def calculate_balancing():
+    def calculate_loading(self):
         pass
 
-    def display_animation():
+    def calculate_balancing(self):
         pass
 
-    def stop_runner():
+    def display_animation(self):
+        pass
+
+    def stop_runner(self):
         pass
 
     def tick(self):
         if self.states[self.state] == "Init":
             self.state = 2
         elif self.states[self.state] == "Log In":
-            if(self.gui.userChanged()):
+            if self.gui.userChanged():
                 self.user = self.gui.getUser()
                 self.state = 3
         elif self.states[self.state] == "Wait Manifest":
-            if(self.gui.manifestSelected()):
+            if self.gui.manifestSelected():
                 self.load_manifest()
                 self.state = 4
         elif self.states[self.state] == "Select Task":
-            if(self.gui.taskSelected()):
+            if self.gui.taskSelected():
                 self.selected_task = self.gui.getTask()
-                if(self.selected_task is "Loading"):
+                if self.selected_task is "Loading":
                     self.state = 5
-                elif(self.selected_task is "Balancing"):
+                elif self.selected_task is "Balancing":
                     self.state = 6
         elif self.states[self.state] == "Loading":
             ##TODO NEED TRANSFER LIST INPUTS
@@ -98,14 +98,14 @@ class Runner:
         elif self.states[self.state] == "Calculating":
             self.state = 8
         elif self.states[self.state] == "Animating":
-            #TODO display to GUI
+            # TODO display to GUI
             pass
         elif self.states[self.state] == "Update Manifest":
             self.update_manifest()
             self.state = 11
         elif self.states[self.state] == "Resetting":
-            if(self.gui.confirmedManifestSent()):
+            if self.gui.confirmedManifestSent():
                 self.state = 4
-        
-        if(self.gui.userChanged()):
-                self.user = self.gui.getUser()
+
+        if self.gui.userChanged():
+            self.user = self.gui.getUser()

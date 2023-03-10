@@ -170,7 +170,7 @@ def test_column_move_cost():
 
     assert stack.get_column() == 3
 
-    assert height == 2
+    assert height == 3
 
     cost, stack, height = o.column_move_cost(3)
 
@@ -178,7 +178,7 @@ def test_column_move_cost():
 
     assert stack.get_column() == 4
 
-    assert height == 1
+    assert height == 2
 
     cost, stack, height = o.column_move_cost(4)
 
@@ -186,4 +186,4 @@ def test_column_move_cost():
 
     assert stack.get_column() == 5
 
-    assert height == 0
+    assert height == 1

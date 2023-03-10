@@ -64,18 +64,20 @@ class Optimizer:
 
     def column_move_cost(self, origin_column):
         stack = self.bay.get_stacks(origin_column)
-
-        if stack.get_height() == 0:
+        origin_height = stack.get_height()
+        if origin_height == 0:
             raise ValueError("Cannot compute movement cost if origin stack is empty")
 
-        min_cost = [100000, stack, stack.get_height()]
-
+        min_cost = [100000, stack, origin_height]
         for i in self.bay.get_stacks():
             dest_column = i.get_column()
             dest_height = i.get_height()
+            dX = abs(dest_column - origin_column)
+            dY = abs(dest_height + 1 - origin_height)
             if dest_column != origin_column:
-                    #height = max(j.get_height() for j in self.bay.get_stacks()[min(dest_column, origin_column) + 1 : max(dest_column, origin_column) - 1])
-                    #temp_cost = abs(dest_column - origin_column) + abs(height - stack.get_height() - 1) + abs(height - dest_height)
-                temp_cost = abs(dest_column - origin_column) + 
+                height = max(j.get_height() for j in self.bay.get_stacks()[min(dest_column, origin_column) : max(dest_column, origin_column)])
+                dY = abs(height + 1 - origin_height) + abs(height - (dest_height + 1)) if origin_height < height else dY
+                print("Max Height Between Columns %s - %s, Height: %s, dY cost: %s " % (min(dest_column, origin_column), max(dest_column, origin_column), height, dY))
+                temp_cost = dX + dY
                 min_cost = (temp_cost, i, height) if min_cost[0] >= temp_cost else min_cost
         return min_cost
