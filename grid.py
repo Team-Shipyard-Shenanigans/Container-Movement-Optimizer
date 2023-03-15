@@ -11,11 +11,6 @@ class Grid(ABC):
     An interface for grid objects like Buffer and ShipBay
     """
 
-    grid = None
-    stacks = None
-    rows = None
-    columns = None
-
     def __init__(self, rows=0, columns=0):
         self.grid = [[None] * columns for i in range(rows)]
         self.stacks = []
@@ -48,12 +43,38 @@ class Grid(ABC):
                     stack.push(cont)
             self.stacks.append(stack)
 
+    def get_container(self, row_index, col_index):
+        return self.grid[row_index][col_index]
+
     def clear_bay(self):
         self.grid = [[None] * self.columns for i in range(self.rows)]
         self.stacks = []
 
     def __repr__(self):
         return "Rows: %s Columns: %s Contents: %s" % (self.rows, self.columns, self.grid)
+
+    def move_to_column(self, origin_column, dest_column, on_ship=None):
+        origin_stack = self.stacks[origin_column]
+        dest_stack = self.stacks[dest_column]
+
+        cont = origin_stack.pop()
+        row = cont.get_location(0)
+        col = cont.get_location(1)
+        self.grid[row][col] = None
+
+        dest_stack.push(cont, on_ship)
+
+        row = cont.get_location(0)
+        col = cont.get_location(1)
+        self.grid[row][col] = cont
+
+        return origin_stack, dest_stack
+
+    def contains_any(self, containers):
+        pass
+
+    def contains_all(self, containers):
+        pass
 
 
 class Buffer(Grid):

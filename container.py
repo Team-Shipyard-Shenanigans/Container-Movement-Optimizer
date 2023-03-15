@@ -25,9 +25,9 @@ class Container:
         self.location = location
         self.on_ship = self.on_ship if on_ship is None else on_ship
 
-    def get_location(self):
+    def get_location(self, index=None):
         """Gets the current container's location"""
-        return self.location
+        return self.location if index is None else self.location[index]
 
     def get_description(self):
         """Returns the container's description as in the manifest"""
@@ -47,4 +47,4 @@ class Container:
         return "[%s, %s, %s]" % (self.description, self.location, self.on_ship)
 
     def manifest_format(self):
-        return "[%02d, %02d], \{%05d\}, %s]" % (9 - self.location[0], self.location[1], self.weight, self.description)
+        return "[%02d, %02d], {%05d}, %s]" % (9 - self.location[0], self.location[1], self.weight, self.description)

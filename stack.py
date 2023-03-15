@@ -17,9 +17,9 @@ class Stack(ABC):
     def get_height(self):
         return len(self.containers)
 
-    def push(self, container):
+    def push(self, container, on_ship=None):
         if len(self.containers) < self.max_height:
-            container.move((self.max_height - 1 - len(self.containers), self.column))
+            container.move((self.max_height - 1 - len(self.containers), self.column), on_ship)
             self.containers.append(container)
         else:
             raise IndexError("Can only stack containers up to 8 high in ship bay")
