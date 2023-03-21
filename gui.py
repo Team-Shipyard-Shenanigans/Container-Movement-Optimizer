@@ -26,7 +26,8 @@ class GUI:
 		self.offloadList = []
 		self.onloadList = []
 		self.bufferList = []
-		self.bayList = ['apple', 'orange', 'pineapple']
+		self.bayListMain = []
+		self.bayListOffload = []
 
 		self.userChanged = False
 		self.manifestSelected = False
@@ -74,9 +75,17 @@ class GUI:
 		# self.horzseparator2 = ttk.Separator(self.root, orient = "horizontal", style = "Thin.TSeparator")
 		# self.horzseparator2.grid(row = 2, column = 0, columnspan = 3, sticky = "ew")
 
-		# bottom frame
-		self.bottomFrame = tk.Frame(self.root, width = 1400, height = 300)
-		self.bottomFrame.grid(row = 2, column = 0, columnspan = 2, sticky = 'nsew')
+		# bottom top frame
+		self.bottomTopFrame = tk.Frame(self.root, width = 1400, height = 250)
+		self.bottomTopFrame.grid(row = 2, column = 0, columnspan = 2, sticky = 'nsew')
+		self.bottomTopFrame.columnconfigure(0, weight = 1)
+		self.bottomTopFrame.rowconfigure(0, weight = 1)
+
+		# bottom bottom frame
+		self.bottomBottomFrame = tk.Frame(self.root, width = 1400, height = 50)
+		self.bottomBottomFrame.grid(row = 3, column = 0, columnspan = 2, sticky = 'nsew')
+		self.bottomBottomFrame.columnconfigure(0, weight = 1)
+		self.bottomBottomFrame.rowconfigure(0, weight = 1)
 
 		# set grid
 		self.root.columnconfigure(0, weight = 1)
@@ -126,7 +135,7 @@ class GUI:
 		self.currStepDisplay = tk.Label(self.topRightFrame, text = ' ')
 		self.currStepDisplay.grid(row = 0, column = 1)
 
-		#time esitmate stuff
+		# time esitmate stuff
 		tk.Label(self.topRightFrame, text = 'Estimated Time Remaining: ').grid(row = 1, column = 0)
 		self.currTimeEstimateDisplay = tk.Label(self.topRightFrame, text = ' ')
 		self.currTimeEstimateDisplay.grid(row = 1, column = 1)
@@ -142,16 +151,19 @@ class GUI:
 		# bay stuff (middleRightFrame)
 		self.bayGrid()
 
-		# widgets in bottomFrame
+		# widgets in bottomTopFrame
 		# log file stuff
-		self.logFileDisplay = tk.Text(self.bottomFrame) #width = 1500, height = 200)
-		self.logFileDisplay.grid(row = 0, column = 0, columnspan = 2, sticky = 'ew')
+		self.logFileDisplay = tk.Text(self.bottomTopFrame) #width = 1500, height = 200)
+		self.logFileDisplay.grid(row = 0, column = 0, sticky = 'nsew')
 
 		self.updateLogFile()
 
+		# widgets in bottomBottomFrame
 		# comment stuff
-		self.commentEntry = tk.Entry(self.bottomFrame)
-		self.commentEntry.grid(row = 1, column = 0, columnspan = 2, sticky = 'ew')
+		self.commentEntry = tk.Entry(self.bottomBottomFrame)
+		self.commentEntry.grid(row = 0, column = 0, sticky = 'nsew')
+		self.commentButton = tk.Button(self.bottomBottomFrame, text = 'Add', command = self.getComment)
+		self.commentButton.grid(row = 0, column = 1, padx = 5, pady = 5)
 
 	def updateCurrUser(self):
 		self.user = self.nameEntry.get()
@@ -211,28 +223,79 @@ class GUI:
 	# offload pop up
 	def startOffload(self):
 		self.offloadPopup = Toplevel(self.root)
-		self.offloadPopup.geometry('300x300')
+		self.offloadPopup.geometry('400x400')
 		self.offloadPopup.title('Offload')
-		self.offloadNameSearched = tk.StringVar(self.offloadPopup)
-		self.offloadNameSearched.trace('w', lambda name, index, mode, var = self.offloadNameSearched: self.updateContainers(var))
-		self.offloadName = tk.Entry(self.offloadPopup, textvariable = self.offloadNameSearched)
-		self.offloadName.grid(row = 0, column = 0)
-		self.offloadDropdown = tk.OptionMenu(self.offloadPopup, self.offloadNameSearched, *self.bayList)
-		self.offloadDropdown.grid(row = 1, column = 0)
-		# self.updateContainers()
+		self.selectedContainer = None
+		tk.Label(self.offloadPopup, text = 'Container Name: ').grid(row = 0, column = 0)
+		self.searchEntry = tk.Entry(self.offloadPopup)
+		self.searchEntry.grid(row = 0, column = 1)
+		self.searchButton = tk.Button(self.offloadPopup, text = 'Search', command = self.searchContainers)
+		self.searchButton.grid(row = 0, column = 2, padx = 20, pady = 20)
+		self.containerGrid = tk.Frame(self.offloadPopup)
+		self.containerGrid.grid(row = 1, column = 0, columnspan = 3)
+		for row in range(8):
+			for column in range(12):
+				containerBox = tk.Frame(self.containerGrid, background = 'white', bd = 4, relief = 'raised', width = 30, height = 30)
+				containerBox.grid(row = row, column = column) 
+				containerName = tk.Label(containerBox, text = '%s,%s'%(row, column))   
+				# containerBox.bind("<Enter>", containerName.place(x=event.x_root, y=event.y_root))
+				# containerBox.bind("<Leave>", containerName.place_forget())
+				containerName = tix.Balloon(self.containerGrid, initwait = 50)
+				containerName.bind_widget(containerBox, balloonmsg = '%s,%s'%(row, column))
+				self.bayListOffload.append(('%s,%s'%(row, column), containerBox))
+				containerBox.bind('<Button-1>', lambda event, row = row, column = column: self.selectContainer(row, column))
+	# 	self.offloadNameSearched = tk.StringVar(self.offloadPopup)
+	# 	self.offloadNameSearched.trace('w', lambda name, index, mode, var = self.offloadNameSearched: self.updateContainers(var))
+	# 	self.offloadName = tk.Entry(self.offloadPopup, textvariable = self.offloadNameSearched)
+	# 	self.offloadName.grid(row = 0, column = 0)
+	# 	self.offloadDropdown = tk.OptionMenu(self.offloadPopup, self.offloadNameSearched, *self.bayList)
+	# 	self.offloadDropdown.grid(row = 1, column = 0)
+	# 	# self.updateContainers()
 		self.offloadDoneButton = tk.Button(self.offloadPopup, text = 'Done', command = self.endOffload)
-		self.offloadDoneButton.grid(row = 2, column = 0)
-		# bind close button to closeOffloadPopup function
-		# self.offloadPopup.protocol("WM_DELETE_WINDOW", self.closeOffloadPopup)
+		self.offloadDoneButton.grid(row = 2, column = 0, columnspan = 3, padx = 20, pady = 20)
+	# 	# bind close button to closeOffloadPopup function
+	# 	# self.offloadPopup.protocol("WM_DELETE_WINDOW", self.closeOffloadPopup)
 	
-	def updateContainers(self, var):
-		query = var.get().lower()
-		filteredContainersMatch = [containers for containers in self.bayList if query in containers.lower()]
-		filteredContainersMatchDropdown = self.offloadDropdown['menu']
-		filteredContainersMatchDropdown.delete(0, 'end')
-		for containers in filteredContainersMatch:
-			if query.lower() in containers.lower():
-				filteredContainersMatchDropdown.add_command(label = containers, command = tk._setit(self.offloadNameSearched, containers))
+	# def show_tooltip(self, event):
+	# 	containerName.place(x=event.x_root, y=event.y_root)
+
+	# def hide_tooltip(self, event):
+	# 	containerName.place_forget()
+
+	def searchContainers(self):
+		query = self.searchEntry.get().lower()
+		print(query)
+		for container in self.bayListOffload:
+			# container[0].motion(container[1])
+			containerName = container[0].lower()
+			print(containerName)
+			# containerName = container[0].subwidget_list['label'].cget('text').lower()
+			if query in containerName:
+				container[1].configure(background = 'yellow')
+			else:
+				container[1].configure(background = 'white')
+                
+	def selectContainer(self, row, column):
+		container = self.bayListOffload[row*12 + column]
+		container[1].configure(background = 'green')
+		self.offloadList.extend(container[0])
+		print(self.offloadList)
+	# 	self.selectedContainer = container
+        
+	# def getSelectedContainer(self):
+	# 	if self.selectedContainer is not None:
+	# 		return self.selectedContainer[0]
+	# 	else:
+	# 		return None
+
+	# def updateContainers(self, var):
+	# 	query = var.get().lower()
+	# 	filteredContainersMatch = [containers for containers in self.bayList if query in containers.lower()]
+	# 	filteredContainersMatchDropdown = self.offloadDropdown['menu']
+	# 	filteredContainersMatchDropdown.delete(0, 'end')
+	# 	for containers in filteredContainersMatch:
+	# 		if query.lower() in containers.lower():
+	# 			filteredContainersMatchDropdown.add_command(label = containers, command = tk._setit(self.offloadNameSearched, containers))
 
 	# def closeOffloadPopup(self):
 	# 	self.offloadPopup.withdraw()
@@ -256,9 +319,9 @@ class GUI:
 		self.onloadQuantity = tk.Spinbox(self.onloadPopup, from_ = 1, to = 96, increment = 1)
 		self.onloadQuantity.grid(row = 1, column = 1)
 		self.onloadAddButton = tk.Button(self.onloadPopup, text = 'Add', command = lambda: self.onloadList.extend([self.onloadName.get()] * int(self.onloadQuantity.get())))
-		self.onloadAddButton.grid(row = 2, column = 0)
+		self.onloadAddButton.grid(row = 2, column = 0, padx = 20, pady = 20)
 		self.onloadDoneButton = tk.Button(self.onloadPopup, text = 'Done', command = self.endOnload)
-		self.onloadDoneButton.grid(row = 2, column = 1)
+		self.onloadDoneButton.grid(row = 2, column = 1, padx = 20, pady = 20)
 		# bind close button to closeOnloadPopup function
 		# self.onloadPopup.protocol("WM_DELETE_WINDOW", self.closeOnloadPopup)
 	
@@ -307,7 +370,7 @@ class GUI:
 				containerBox.grid(row = row, column = column)	
 				containerName = tix.Balloon(self.middleRightFrame, initwait = 50)
 				containerName.bind_widget(containerBox, balloonmsg = '%s,%s'%(row, column))
-				self.bayList.append((containerName, containerBox))
+				self.bayListMain.append((containerName, containerBox))
 				# containerName = tk.Label(containerBox, text = '%s,%s'%(row, column), width = 4, height = 2).grid(row = 0, column = 0)		
 
 
@@ -326,7 +389,7 @@ class GUI:
 		for i in range(96):
 			location = self.bay.index_mapper(i)
 			if location in self.animation: 
-				self.bayList[i][1].config(background = 'red')
+				self.bayListMain[i][1].config(background = 'red')
 			# containerName = tk.Label(self.bufferList.get(i), text = container.get_description(), background = 'white', width = 10, height = 2)
 
 	def displayAnimation(self):
@@ -335,7 +398,8 @@ class GUI:
 			row = location[0]
 			column = location[1]
 			container = self.bay.get_container(row, column)
-			self.bayList[i][0].bind_widget(self.bayList[i][1], balloonmsg = container.get_description())
+			self.bayListMain[i][0].bind_widget(self.bayListMain[i][1], balloonmsg = container.get_description())
+			# self.bayListMain[i][0] = Container.get_description()
 			# containerName = tk.Label(self.bayList.get(i), text = container.get_description(), background = 'white', width = 10, height = 2)
 
 	# get funcs
@@ -365,6 +429,9 @@ class GUI:
 	
 	def getStepCompleted(self):
 		return self.stepCompleted
+	
+	def getComment(self):
+		return self.commentEntry
 	
 	# set funcs
 	def setUserChanged(self, userChanged):
