@@ -1,7 +1,4 @@
-from abc import ABC
-
-
-class Stack(ABC):
+class Stack:
     containers = []
     column = 0
     max_height = 0
@@ -14,15 +11,20 @@ class Stack(ABC):
     def pop(self):
         return self.containers.pop()
 
+    def get_max_height(self):
+        return self.max_height
+
     def get_height(self):
         return len(self.containers)
 
     def push(self, container, on_ship=None):
         if len(self.containers) < self.max_height:
-            container.move((self.max_height - 1 - len(self.containers), self.column), on_ship)
             self.containers.append(container)
         else:
-            raise IndexError("Can only stack containers up to 8 high in ship bay")
+            raise IndexError("Can only stack containers up to %s high in current area" % (self.max_height))
+
+    def peek(self):
+        return self.containers[-1] if len(self.containers) != 0 else None
 
     def get_column(self):
         return self.column

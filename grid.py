@@ -18,63 +18,126 @@ class Grid(ABC):
         self.columns = columns
 
     @abstractmethod
-    def index_mapper(self, value):
+    def index_mapper(self, value) -> tuple[int, int]:
         """
         Abstract method for subclasses of the grid class to specify their own mapping
         """
 
-    def get_stacks(self, column=None):
+    def get_stacks(self, column=None) -> list["Stack.Stack"]:
         return self.stacks if column is None else self.stacks[column]
 
-    def get_grid(self):
+    def get_grid(self) -> list[list["Container.Container"]]:
         return self.grid
 
-    def add_container(self, container=Container.Container()):
+    def add_container(self, container=Container.Container(), row=0, column=0):
         """Adds given container to the location specified by the container."""
-        indices = container.get_location()
-        self.grid[indices[0]][indices[1]] = container
+        self.grid[row][column] = container
 
     def convert_grid_to_stack(self):
         for j in range(self.columns):
             stack = Stack.Stack(j, self.rows)
             for i in range(self.rows - 1, -1, -1):
                 cont = self.grid[i][j]
-                if cont is not None:
+                if cont is not None and cont.get_description() != " NAN":
                     stack.push(cont)
             self.stacks.append(stack)
 
-    def get_container(self, row_index, col_index):
+    def get_container(self, row_index, col_index) -> "Container.Container":
         return self.grid[row_index][col_index]
 
     def clear_bay(self):
         self.grid = [[None] * self.columns for i in range(self.rows)]
         self.stacks = []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Rows: %s Columns: %s Contents: %s" % (self.rows, self.columns, self.grid)
 
-    def move_to_column(self, origin_column, dest_column, on_ship=None):
-        origin_stack = self.stacks[origin_column]
-        dest_stack = self.stacks[dest_column]
+    def __str__(self) -> str:
+        string = ""
+        for i in self.grid:
+            for j in i:
+                string = string + " %s " % (j)
+            string = string + "\n"
+        return string
 
-        cont = origin_stack.pop()
-        row = cont.get_location(0)
-        col = cont.get_location(1)
-        self.grid[row][col] = None
+    def move_to_column(self, origin_column, dest_column, on_ship=None, container=None):
+        if dest_column != -1 and origin_column != -1:
+            origin_stack = self.stacks[origin_column]
+            dest_stack = self.stacks[dest_column]
+            origin_row = origin_stack.get_max_height() - origin_stack.get_height()
+            dest_row = dest_stack.get_max_height() - (dest_stack.get_height() + 1)
+            cont = origin_stack.pop()
+            dest_stack.push(cont, on_ship)
 
-        dest_stack.push(cont, on_ship)
+            self.grid[origin_row][origin_column] = None
+            self.grid[dest_row][dest_column] = cont
+        elif dest_column == -1 and origin_column != -1:
+            origin_stack = self.stacks[origin_column]
+            origin_row = origin_stack.get_max_height() - origin_stack.get_height()
+            origin_stack.pop()
+            self.grid[origin_row][origin_column] = None
+        elif dest_column != -1 and origin_column == -1 and container is not None:
+            dest_stack = self.stacks[dest_column]
+            dest_row = dest_stack.get_max_height() - (dest_stack.get_height() + 1)
+            dest_stack.push(container, on_ship)
+            self.grid[dest_row][dest_column] = container
+        else:
+            raise ValueError("Cannot move to non_existing column from non_existing column")
 
-        row = cont.get_location(0)
-        col = cont.get_location(1)
-        self.grid[row][col] = cont
+    def contains_any(self, containers) -> bool:
+        for container in containers:
+            for i in self.grid:
+                for j in i:
+                    if j is not None and j.get_description() == container.get_description():
+                        return True
+        return False
 
-        return origin_stack, dest_stack
+    def contains_all(self, containers) -> bool:
+        for container in containers:
+            has_cont = False
+            for i in self.grid:
+                for j in i:
+                    if j is not None and j.get_description() == container.get_description():
+                        has_cont = True
+            if has_cont is False:
+                return False
+        return True
 
-    def contains_any(self, containers):
-        pass
+    def get_height(self) -> int:
+        return self.rows
 
-    def contains_all(self, containers):
-        pass
+    def get_containers(self, container=Container.Container()) -> list[tuple["Container.Container", int]]:
+        """Gets all target containers based on description"""
+        container_array = []
+        for i in enumerate(self.grid):
+            for j in enumerate(i[1]):
+                if j[1] is not None and j[1].get_description() == container.get_description():
+                    container_array.append(j)
+        return container_array
+
+    def remove_container(self, row, column):
+        self.grid[row][column] = None
+        self.convert_grid_to_stack()
+
+    def __eq__(self, __o: object) -> bool:
+        for i in range(0, self.rows):
+            for j in range(0, self.columns):
+                if self.grid[i][j] != __o.grid[i][j]:
+                    return False
+        return True
+
+    def manhattan(self, origin, destination) -> int:
+        origin_row = origin[0]
+        origin_col = origin[1]
+        dest_row = destination[0]
+        dest_col = destination[1]
+        return abs(origin_row - dest_row) + abs(origin_col - dest_col)
+
+    def get_columns(self) -> int:
+        return self.columns
+
+    def get_rows(self) -> int:
+        return self.rows
 
 
 class Buffer(Grid):
@@ -103,6 +166,14 @@ class Buffer(Grid):
             col_index = value % 24
         return (row_index, col_index)
 
+    def __deepcopy__(self, memo):
+        new_grid = Buffer()
+        for i in range(self.rows):
+            for j in range(self.columns):
+                new_grid.grid[i][j] = self.grid[i][j]
+        new_grid.convert_grid_to_stack()
+        return new_grid
+
 
 class ShipBay(Grid):
     """
@@ -128,3 +199,11 @@ class ShipBay(Grid):
             row_index = int(value / 12)
             col_index = value % 12
         return (row_index, col_index)
+
+    def __deepcopy__(self, memo):
+        new_grid = ShipBay()
+        for i in range(self.rows):
+            for j in range(self.columns):
+                new_grid.grid[i][j] = self.grid[i][j]
+        new_grid.convert_grid_to_stack()
+        return new_grid
