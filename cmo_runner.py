@@ -45,7 +45,7 @@ class Runner:
                 self.ship_bay.add_container(cont, row, column)
 
     def load_manifest(self):
-        self.manifest = open(self.gui.getManifestPath(), "r", encoding="ascii")
+        self.manifest = open(self.gui.getManifest(), "r", encoding="ascii")
 
     def update_manifest(self):
         manifest = open(self.manifest, "w", encoding="ascii")
@@ -87,14 +87,14 @@ class Runner:
                 self.log_in()
                 self.state = 3
         elif self.states[self.state] == "Wait Manifest":
-            if self.gui.manifestSelected():
+            if self.gui.getManifestSelected():
                 self.load_manifest()
                 self.write_to_log("Manifest %s has been selected. Parsing manifest..." % (self.manifest_path))
                 self.read_manifest()
                 self.write_to_log("Parsing manifest %s is complete." % (self.manifest_path))
                 self.state = 4
         elif self.states[self.state] == "Select Task":
-            if self.gui.taskSelected():
+            if self.gui.getTaskSelected():
                 self.selected_task = self.gui.getTask()
                 if self.selected_task is "Loading":
                     self.state = 5
@@ -129,14 +129,23 @@ class Runner:
             self.update_manifest()
             self.state = 11
         elif self.states[self.state] == "Resetting":
-            if self.gui.confirmedManifestSent():
+            if self.gui.getManifestSent():
                 self.write_to_log("Manifest completed, awaiting next manifest.")
                 self.state = 4
 
-        if self.gui.userChanged():
+        if self.gui.getUserChanged():
             self.log_in()
 
     def write_to_log(self, string):
         log = open(self.log_path, "w", encoding="ascii")
         log.write("%s : %s" % (time.localtime()[0:5], string))
         log.close()
+
+    def generate_animation(self, move_tree):
+        num_steps = 0
+
+        while move_tree is not None:
+            num_steps += 1
+            move_tree = move_tree.get_parent_move()
+
+        return num_steps
