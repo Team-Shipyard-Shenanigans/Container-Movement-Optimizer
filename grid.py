@@ -209,6 +209,9 @@ class ShipBay(Grid):
             col_index = value % 12
         return (row_index, col_index)
 
+    def index_unmap(self, location) -> int:  ## 95 -> 3, 23, 3 * 24 = 72 + 23 = 95
+        return (location[0] * 12) + location[1]
+
     def __deepcopy__(self, memo):
         new_grid = ShipBay()
         for i in range(self.rows):

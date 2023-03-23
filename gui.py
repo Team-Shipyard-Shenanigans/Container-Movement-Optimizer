@@ -23,7 +23,7 @@ class GUI:
         self.root.title("Container Movement Optimizer")
         self.root.geometry("1400x700")
         # self.root.configure(background = "white")
-        self.bayListMain = [[None * 12] * 8]
+        self.bayListMain = []
         self.bayListOffload = []
 
         self.log_file_name = "".join(["KeoghLongBeach", str(time.localtime()[0]), ".txt"])
@@ -49,6 +49,7 @@ class GUI:
         self.time_estimate = 0
         self.onloadSelected = False
         self.offloadSelected = False
+        self.task_complete = False
 
         self.initUI()
 
@@ -172,7 +173,7 @@ class GUI:
         # comment stuff
         self.commentEntry = tk.Entry(self.bottomBottomFrame)
         self.commentEntry.grid(row=0, column=0, sticky="nsew")
-        self.commentButton = tk.Button(self.bottomBottomFrame, text="Add", command=self.get_comment)
+        self.commentButton = tk.Button(self.bottomBottomFrame, text="Add", command=self.add_comment)
         self.commentButton.grid(row=0, column=1, padx=5, pady=5)
 
     def change_user(self):
@@ -193,7 +194,7 @@ class GUI:
         fileName = os.path.basename(filePath)
         self.currManifestFileDisplay.config(text=fileName)
         self.manifest = filePath
-        self.write_to_log("Manifest %s has been selected. Parsing manifest..." % (self.manifest))
+        self.write_to_log("Manifest %s has been selected." % (self.manifest))
         self.read_manifest()
         self.write_to_log("Parsing manifest %s is complete." % (self.manifest))
         self.display_bay_grid()
@@ -203,17 +204,33 @@ class GUI:
         self.logFileDisplay["state"] = "normal"
         with open(self.log_path, "r") as logFile:
             logFileLines = logFile.readlines()
-        lastThreeLines = logFileLines[-3:]
+        lastThreeLines = logFileLines[-8:]
         self.logFileDisplay.delete("1.0", "end")
         for logFileLines in lastThreeLines:
             self.logFileDisplay.insert("end", logFileLines)
         self.logFileDisplay["state"] = "disabled"
 
     def progress_animation(self):
-        if self.current_step < self.total_steps:
+        if self.current_step < self.total_steps and not self.task_complete:
+            self.currStepDisplay.config(text=str(self.current_step) + "/" + str(self.total_steps))
+            self.display_animation()
             self.current_step += 1
-        self.currStepDisplay.config(text=str(self.current_step) + "/" + str(self.total_steps))
-        self.display_animation()
+        else:
+            if self.current_step == self.total_steps:
+                self.task_complete = True
+            if self.task_complete:
+                self.write_to_log("Task %s has been completed. Updating Manifest" % self.task)
+                self.ship_bay = self.animation[0].get_bay()
+                self.current_step = 0
+                self.currStepDisplay.config(text="")
+                self.onloadSelected = False
+                self.offloadSelected = False
+                self.offloadList = []
+                self.onloadList = []
+                self.update_manifest()
+                self.display_bay_grid()
+                self.display_buffer_grid()
+                self.write_to_log("Manifest has been updated. Please select a new manifest or task.")
 
     def update_time_estimate(self):
         hours = self.time_estimate / 60
@@ -234,12 +251,14 @@ class GUI:
         self.task = "Loading"
         self.currTaskDisplay.config(text=self.task)
         self.taskSelectorPopup.withdraw()
+        self.task_complete = False
         self.start_offload_selection()
         self.start_onload_selection()
 
     def balance_selection(self):
         self.task = "Balancing"
         self.currTaskDisplay.config(text=self.task)
+        self.task_complete = False
         self.taskSelectorPopup.withdraw()
         self.calculate_balance()
 
@@ -260,11 +279,13 @@ class GUI:
             for column in range(12):
                 containerBox = tk.Frame(self.containerGrid, background="white", bd=4, relief="raised", width=30, height=30)
                 containerBox.grid(row=row, column=column)
+                containerBox.grid_propagate(False)
                 container = self.ship_bay.get_container(row, column)
-
+                containerLabel = tk.Label(containerBox, text=container.get_description() if container is not None else "")
+                containerLabel.grid(row=0, column=0)
                 containerName = tix.Balloon(self.containerGrid, initwait=50)
-                containerName.bind_widget(containerBox, balloonmsg=container.get_description() if container is not None else "None")
-                self.bayListOffload.append((container.get_description() if container is not None else "None", containerBox))
+                containerName.bind_widget(containerBox, balloonmsg=container.get_description() if container is not None else "")
+                self.bayListOffload.append((container.get_description() if container is not None else "None", containerBox, containerLabel))
                 containerBox.bind("<Button-1>", lambda event, row=row, column=column: self.select_offload_container(row, column))
         self.offloadDoneButton = tk.Button(self.offloadPopup, text="Done", command=self.end_offload_selection)
         self.offloadDoneButton.grid(row=2, column=0, columnspan=3, padx=20, pady=20)
@@ -314,9 +335,11 @@ class GUI:
 
     def calculate_loading(self):
         if self.onloadSelected and self.offloadSelected:
+            self.write_to_log("Calculating loading...")
             print(self.onloadList)
             print(self.offloadList)
             self.generate_animation(self.optimizer.load(self.ship_bay, self.buffer, self.onloadList, self.offloadList))
+            self.write_to_log("Finished calculation, displaying to grid")
 
     def calculate_balance(self):
         self.generate_animation(self.optimizer.balance(self.ship_bay, self.buffer))
@@ -327,8 +350,8 @@ class GUI:
     def generate_animation(self, move_tree):
         num_steps = 0
         move = move_tree[0]
-        animation = []
         time_total = 0
+        animation = []
         while move is not None:
             print("Move %s from %s to %s" % (move.get_container(), move.get_init_pos(), move.get_end_pos()))
             print(move.get_bay())
@@ -340,16 +363,23 @@ class GUI:
         self.total_steps = num_steps - 1
         self.time_estimate = time_total
         self.animation = animation
+        self.update_time_estimate()
+        self.currStepDisplay.config(text=str(self.current_step) + "/" + str(self.total_steps))
 
     def display_animation(self):
+        for i in range(96):
+            self.bayListMain[i][1].config(background="white")
+            self.bufferList[i][1].config(background="white")
+
         index = self.total_steps - 1 - self.current_step
         curr_move = self.animation[index]
         curr_bay = curr_move.get_bay()
         curr_cost = curr_move.get_cost()
         curr_buff = curr_move.get_buffer()
         curr_move_end_in_bay = curr_move.get_in_bay()
-        prev_move_end_in_bay = self.animation[index - 1].get_in_bay()
+        prev_move_end_in_bay = self.animation[index + 1].get_in_bay()
         animation = curr_move.get_animation()
+        self.write_to_log("Step %s: Move %s from %s to %s" % (self.current_step, curr_move.get_container(), curr_move.get_init_pos(), curr_move.get_end_pos()))
         for i in range(96):
             bay_loc = curr_bay.index_mapper(i)
 
@@ -363,52 +393,50 @@ class GUI:
 
             ship_cont = curr_bay.get_container(s_row, s_column)
             buff_cont = curr_buff.get_container(b_row, b_column)
-            self.bayListMain[i][0].bind_widget(self.bayListMain[i][1], balloonmsg=ship_cont.get_description() if ship_cont is not None else "None")
-            self.bufferList[i][0].bind_widget(self.bufferList[i][1], balloonmsg=buff_cont.get_description() if buff_cont is not None else "None")
-            # self.bayListMain[i][0] = Container.get_description()
-            # containerName = tk.Label(self.bayList.get(i), text = container.get_description(), background = 'white', width = 10, height = 2)
-        for i in range(96):
-            bay_loc = curr_bay.index_mapper(i)
-            buff_loc = curr_buff.index_mapper(i)
-            if curr_move_end_in_bay and prev_move_end_in_bay:
-                if bay_loc == animation[0]:
-                    self.bayListMain[i][1].config(background="blue")
-                    self.bayListMain[i][1].config(text="1")
-                elif bay_loc == animation[1]:
-                    self.bayListMain[i][1].config(background="green")
-                    self.bayListMain[i][1].config(text="2")
-                elif bay_loc == animation[2]:
-                    self.bayListMain[i][1].config(background="yellow")
-                    self.bayListMain[i][1].config(text="3")
-            elif curr_move_end_in_bay and not prev_move_end_in_bay:
-                if buff_loc == animation[0]:
-                    self.bufferList[i][1].config(background="blue")
-                    self.bufferList[i][1].config(text="1")
-                elif bay_loc == animation[2]:
-                    self.bayListMain[i][1].config(background="yellow")
-                    self.bayListMain[i][1].config(text="3")
-            elif not curr_move_end_in_bay and prev_move_end_in_bay:
-                if buff_loc == animation[2]:
-                    self.bufferList[i][1].config(background="blue")
-                    self.bufferList[i][1].config(text="3")
-                elif bay_loc == animation[0]:
-                    self.bayListMain[i][1].config(background="blue")
-                    self.bayListMain[i][1].config(text="1")
-            elif not curr_move_end_in_bay and not prev_move_end_in_bay:
-                if buff_loc == animation[0]:
-                    self.bufferList[i][1].config(background="blue")
-                    self.bufferList[i][1].config(text="1")
-                elif buff_loc == animation[1]:
-                    self.bufferList[i][1].config(background="green")
-                    self.bufferList[i][1].config(text="2")
-                elif buff_loc == animation[2]:
-                    self.bufferList[i][1].config(background="yellow")
-                    self.bufferList[i][1].config(text="3")
-            else:
-                self.bayListMain[i][1].config(background="white")
-                self.bayListMain[i][1].config(text="")
-                self.bufferList[i][1].config(background="white")
-                self.bufferList[i][1].config(text="")
+            self.bayListMain[i][0].bind_widget(self.bayListMain[i][1], balloonmsg=ship_cont.get_description() if ship_cont is not None else "")
+            self.bayListMain[i][1].config(text=ship_cont.get_description() if ship_cont is not None else "")
+            self.bufferList[i][0].bind_widget(self.bufferList[i][1], balloonmsg=buff_cont.get_description() if buff_cont is not None else "")
+            self.bufferList[i][1].config(text=buff_cont.get_description() if buff_cont is not None else "")
+
+        init_pos = animation[0]
+        cont_pos = animation[1]
+        end_pos = animation[2]
+
+        if curr_move_end_in_bay and prev_move_end_in_bay:
+            init = curr_bay.index_unmap(init_pos)
+            self.bayListMain[init][1].config(background="blue")
+            cont = curr_bay.index_unmap(cont_pos)
+            self.bayListMain[cont][1].config(background="red")
+            end = curr_bay.index_unmap(end_pos) + curr_bay.get_columns()
+            self.bayListMain[end][1].config(background="green")
+
+        elif not curr_move_end_in_bay and prev_move_end_in_bay:
+            init = curr_bay.index_unmap(init_pos)
+            self.bayListMain[init][1].config(background="blue")
+            cont = curr_bay.index_unmap(cont_pos)
+            self.bayListMain[cont][1].config(background="red")
+            end = curr_buff.index_unmap(end_pos) + curr_buff.get_columns()
+            self.bufferList[end][1].config(background="green")
+        elif curr_move_end_in_bay and not prev_move_end_in_bay:
+            init = curr_buff.index_unmap(init_pos)
+            self.bufferList[init][1].config(background="blue")
+            cont = curr_buff.index_unmap(cont_pos)
+            self.bufferList[cont][1].config(background="red")
+            end = curr_bay.index_unmap(end_pos) + curr_bay.get_columns()
+            self.bayListMain[end][1].config(background="green")
+        elif not curr_move_end_in_bay and not prev_move_end_in_bay:
+            init = curr_buff.index_unmap(init_pos)
+            self.bufferList[init][1].config(background="blue")
+            cont = curr_buff.index_unmap(cont_pos)
+            self.bufferList[cont][1].config(background="red")
+            end = curr_buff.index_unmap(end_pos) + curr_buff.get_columns()
+            self.bufferList[end][1].config(background="green")
+        else:
+            print("Error in animation")
+
+        print("Time estimate: %s" % self.time_estimate)
+        print("Current cost: %s" % curr_cost)
+
         self.time_estimate -= curr_cost
         self.update_time_estimate()
 
@@ -426,29 +454,38 @@ class GUI:
         manifest_file.close()
 
     def update_manifest(self):
-        manifest = open(self.manifest, "w", encoding="ascii")
-        for i in self.ship_bay.get_grid():
-            for j in i:
-                manifest.write(j.manifest_format())
+        manifest = open(self.manifest.split(".")[0] + "OUTBOUND.txt", "w", encoding="ascii")
+        grid = self.ship_bay.get_grid()
+        for i in range(8):
+            for j in range(12):
+                cont = grid[i][j]
+                if cont is not None:
+                    manifest.write(cont.manifest_format(i, j))
+                else:
+                    manifest.write("[%02d, %02d], {%05d}, %s\n" % (8 - i, j + 1, 0, "UNUSED"))
 
     def display_buffer_grid(self):
         for row in range(4):
             for column in range(24):
-                containerBox = tk.Frame(self.middleLeftFrame, background="white", bd=4, relief="raised", width=30, height=30)
+                containerBox = tk.Label(self.middleLeftFrame, background="white", bd=4, relief="raised", width=4, height=2)
                 containerBox.grid(row=row, column=column)
+                containerBox.grid_propagate(False)
                 containerName = tix.Balloon(self.middleLeftFrame, initwait=50)
                 container = self.buffer.get_container(row, column)
-                containerName.bind_widget(containerBox, balloonmsg=container.get_description() if container is not None else "None")
-                self.bufferList.append((containerName, containerBox))
+                containerLabel = tk.Label(containerBox, background="white", text=container.get_description() if container is not None else "")
+                containerLabel.grid(row=0, column=0)
+                containerName.bind_widget(containerBox, balloonmsg=container.get_description() if container is not None else "")
+                self.bufferList.append((containerName, containerBox, containerLabel))
 
     def display_bay_grid(self):
         for row in range(8):
             for column in range(12):
-                containerBox = tk.Frame(self.middleRightFrame, background="white", bd=4, relief="raised", width=30, height=30)
-                containerBox.grid(row=row, column=column)
-                containerName = tix.Balloon(self.middleRightFrame, initwait=50)
                 container = self.ship_bay.get_container(row, column)
-                containerName.bind_widget(containerBox, balloonmsg=container.get_description() if container is not None else "None")
+                containerBox = tk.Label(self.middleRightFrame, background="white", bd=4, relief="raised", width=4, height=2, text=container.get_description() if container is not None else "")
+                containerBox.grid(row=row, column=column)
+                containerBox.grid_propagate(False)
+                containerName = tix.Balloon(self.middleRightFrame, initwait=50)
+                containerName.bind_widget(containerBox, balloonmsg=container.get_description() if container is not None else "")
                 self.bayListMain.append((containerName, containerBox))
                 # containerName = tk.Label(containerBox, text = '%s,%s'%(row, column), width = 4, height = 2).grid(row = 0, column = 0)
 
@@ -465,33 +502,8 @@ class GUI:
     def get_manifest(self):
         return self.manifest
 
-    def get_comment(self):
-        return self.commentEntry
+    def add_comment(self):
+        self.write_to_log("%s commented: %s" % (self.user, self.commentEntry.get()))
 
-
-# class HoverFrame(tk.Frame):
-# 	def __init__(self, parent, text):
-# 		tk.Frame.__init__(self, parent, bg="white")
-# 		self.config(width = 29, height = 29)
-# 		self.pack_propagate(0)
-
-#         # Create a label to display the text
-# 		self.tooltip_label = tk.Label(self, text=text, bg="white", bd=1, relief="solid", font=('Arial', 8))
-# 		self.tooltip_label.place_forget()
-
-#         # Bind the Enter and Leave events to show/hide the label
-# 		self.bind('<Enter>', self.show_tooltip)
-# 		self.bind('<Leave>', self.hide_tooltip)
-
-# 	def show_tooltip(self, event):
-#         # Position and display the label when the mouse enters the frame
-# 		x = self.winfo_rootx() - self.winfo_x()
-# 		y = self.winfo_rooty() - self.winfo_y() - 30  # adjust y position to show label above HoverFrame
-# 		self.tooltip_label.place(x=x, y=y)
-# 		self.tooltip_label.lift()
-
-# 	def hide_tooltip(self, event):
-#         # Hide the label when the mouse leaves the frame
-# 		self.tooltip_label.place_forget()
 
 GUI()

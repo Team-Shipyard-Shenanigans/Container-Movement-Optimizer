@@ -28,7 +28,7 @@ class Container:
         return "%s" % self.description
 
     def manifest_format(self, row, column) -> str:
-        return "[%02d, %02d], {%05d}, %s]" % (9 - row, column, self.weight, self.description)
+        return "[%02d, %02d], {%05d}, %s\n" % (8 - row, column + 1, self.weight, self.description)
 
     def __eq__(self, __o) -> bool:
         return isinstance(__o, Container) and self.description == __o.description

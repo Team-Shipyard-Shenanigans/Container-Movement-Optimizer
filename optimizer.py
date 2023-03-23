@@ -8,8 +8,6 @@ import move
 class Optimizer:
     def load(self, bay, buffer, container_onload_list, container_offload_list):
         nodes = [move.Move(bay, buffer, None, (-1, 0), container_offload_list, container_onload_list, True, 0, None, None, None)]
-        bay_animation = []
-        buffer_animation = []
         min_index = 0
         nodes_expanded = 0
         max_nodes_in_queue = 0
@@ -34,7 +32,6 @@ class Optimizer:
                     min_node = i
             min_index = min_node[0]
             # print("Choosing: Move To %s From %s End in Bay? %s, F(N) = %s, H(N) = %s, G(N) = %s" % (min_node[1].get_end_pos(), min_node[1].get_init_pos(), min_node[1].get_in_bay(), f_1, f_1 - min_node[1].get_cost(), min_node[1].get_cost()))
-        return bay_animation, buffer_animation
 
     def balance(self, bay, buffer):
         nodes = [move.Move(bay, buffer, None, (-1, 0), None, None, True, 0, None, None, None)]
@@ -135,7 +132,7 @@ class Optimizer:
                     cost = prev_cost + bay_copy.manhattan(prev_pos, cont_pos) + curr_move.column_move_cost(origin_col, dest_col)
                     ending_loc = (i.get_max_height() - (i.get_height() + 2), dest_col)
                     bay_copy.move_to_column(origin_col, dest_col)
-                    moves.append(move.Move(bay_copy, curr_buffer, prev_pos, ending_loc, curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, cost, curr_move, origin_stack.peek()))
+                    moves.append(move.Move(bay_copy, curr_buffer, prev_pos, ending_loc, curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, cost, curr_move, origin_stack.peek(), cont_pos))
 
         return moves
 
