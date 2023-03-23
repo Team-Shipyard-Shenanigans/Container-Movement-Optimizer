@@ -1,6 +1,5 @@
 import grid as Grid
 import container as Container
-import stack as Stack
 import optimizer as Optimizer
 import gui
 import os
@@ -10,12 +9,19 @@ import time
 class Runner:
     states = {1: "Init", 2: "Log In", 3: "Wait Manifest", 4: "Select Task", 5: "Loading", 6: "Balancing", 7: "Calculating", 8: "Animating", 9: "Update Manifest", 10: "Stopping", 11: "Resetting"}
 
-    def __init__(self):
-        self.gui = gui.GUI()
-        # self.log = open(self.log_path, "a")
-        self.manifest = open()
+    def __init__(self, gui):
+        self.log_file_name = "".join(["KeoghLongBeach", str(time.localtime()[0]), ".txt"])
+        self.log_folder_path = "C:\CMO\logs"
+        if not os.path.exists(self.log_folder_path):
+            os.makedirs(self.log_folder_path)
+        self.log_path = os.path.join(self.log_folder_path, self.log_file_name)
+        if not os.path.exists(self.log_path):
+            open(self.log_path, "a").close()
+        self.gui = gui
+        self.log = open(self.log_path, "a")
+        self.manifest = None
         self.manifest_path = ""
-        self.log_path = "".join(["C:/CMO/logs/KeoghLongBeach", time.localtime()[0], ".txt"])
+        self.manifest_processed = False
         self.optimizer = None
         self.user = None
         self.current_step = 0
@@ -29,12 +35,16 @@ class Runner:
         self.onload_list = []
         self.bufferAnimation = []
         self.bayAnimation = []
-        self.state = None
+        self.state = 1
 
     def init_optimizer(self):
         self.optimizer = Optimizer.Optimizer(self.ship_bay, self.buffer)
 
+    def get_log_file_path(self):
+        return self.log_file_path
+
     def read_manifest(self):
+        self.manifest = open(self.gui.getManifest(), "r", encoding="ascii")
         for line in self.manifest:
             line = line.replace("[", "").replace("]", "").replace("{", "").replace("}", "")
             data = line.split(",")
@@ -43,9 +53,7 @@ class Runner:
                 column = int(data[1]) - 1
                 cont = Container.Container(weight=int(data[2].strip()), description=str(data[3].strip()), on_ship=True)
                 self.ship_bay.add_container(cont, row, column)
-
-    def load_manifest(self):
-        self.manifest = open(self.gui.getManifest(), "r", encoding="ascii")
+        self.manifest.close()
 
     def update_manifest(self):
         manifest = open(self.manifest, "w", encoding="ascii")
@@ -83,22 +91,25 @@ class Runner:
         if self.states[self.state] == "Init":
             self.state = 2
         elif self.states[self.state] == "Log In":
-            if self.gui.userChanged():
+            if self.gui.getUserChanged():
                 self.log_in()
                 self.state = 3
+                print("User changed to " % (self.user))
         elif self.states[self.state] == "Wait Manifest":
             if self.gui.getManifestSelected():
-                self.load_manifest()
                 self.write_to_log("Manifest %s has been selected. Parsing manifest..." % (self.manifest_path))
                 self.read_manifest()
                 self.write_to_log("Parsing manifest %s is complete." % (self.manifest_path))
+                self.gui.updateBay(self.ship_bay)
+                self.gui.updateBuffer(self.buffer)
+                self.manifest_processed = True
                 self.state = 4
         elif self.states[self.state] == "Select Task":
             if self.gui.getTaskSelected():
                 self.selected_task = self.gui.getTask()
-                if self.selected_task is "Loading":
+                if self.selected_task == "Loading":
                     self.state = 5
-                elif self.selected_task is "Balancing":
+                elif self.selected_task == "Balancing":
                     self.state = 6
                 else:
                     raise ValueError("Task must be either Loading or Balancing!")
@@ -131,10 +142,13 @@ class Runner:
         elif self.states[self.state] == "Resetting":
             if self.gui.getManifestSent():
                 self.write_to_log("Manifest completed, awaiting next manifest.")
-                self.state = 4
+                self.state = 3
+                self.manifest_processed = False
 
         if self.gui.getUserChanged():
             self.log_in()
+
+        # self.gui.get_root().after(100, self.tick())
 
     def write_to_log(self, string):
         log = open(self.log_path, "w", encoding="ascii")
@@ -147,5 +161,7 @@ class Runner:
         while move_tree is not None:
             num_steps += 1
             move_tree = move_tree.get_parent_move()
+
+        self.total_steps = num_steps
 
         return num_steps

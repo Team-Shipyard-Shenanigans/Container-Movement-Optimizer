@@ -1,7 +1,6 @@
 """
 Module for testing the optimizer class
 """
-import pytest as pt
 import optimizer as Optimizer
 import grid as Grid
 import container as Container

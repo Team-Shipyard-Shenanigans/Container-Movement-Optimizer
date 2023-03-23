@@ -7,7 +7,7 @@ import move
 
 class Optimizer:
     def load(self, bay, buffer, container_onload_list, container_offload_list):
-        nodes = [move.Move(bay, buffer, None, (-1, 0), container_offload_list, container_onload_list, True, 0, None, None)]
+        nodes = [move.Move(bay, buffer, None, (-1, 0), container_offload_list, container_onload_list, True, 0, None, None, None)]
         bay_animation = []
         buffer_animation = []
         min_index = 0
@@ -37,7 +37,7 @@ class Optimizer:
         return bay_animation, buffer_animation
 
     def balance(self, bay, buffer):
-        nodes = [move.Move(bay, buffer, None, (-1, 0), None, None, True, 0, None, None)]
+        nodes = [move.Move(bay, buffer, None, (-1, 0), None, None, True, 0, None, None, None)]
         min_index = 0
         nodes_expanded = 0
         max_nodes_in_queue = 0
@@ -86,7 +86,7 @@ class Optimizer:
                         offload_remaining = copy.deepcopy(curr_move.get_offload_remaining())
                         offload_remaining.remove(i)
                         cost = prev_cost + bay_copy.manhattan(prev_pos, (cont_pos[0], cont_pos[1] + 1)) + curr_move.buffer_move_cost(cont_pos, True)
-                        moves.append(move.Move(bay_copy, curr_buffer, prev_pos, (-1, 23), offload_remaining, curr_move.get_onload_remaining(), False, cost, curr_move, i))
+                        moves.append(move.Move(bay_copy, curr_buffer, prev_pos, (-1, 23), offload_remaining, curr_move.get_onload_remaining(), False, cost, curr_move, i, cont_pos))
                     else:
                         for i in curr_bay.get_stacks():
                             dest_col = i.get_column()
@@ -95,11 +95,12 @@ class Optimizer:
                                 cost = prev_cost + bay_copy.manhattan(prev_pos, cont_pos) + curr_move.column_move_cost(origin_col, dest_col)
                                 ending_loc = (i.get_max_height() - (i.get_height() + 2), dest_col)
                                 bay_copy.move_to_column(origin_col, dest_col)
-                                moves.append(move.Move(bay_copy, curr_buffer, prev_pos, ending_loc, curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, cost, curr_move, i.peek()))
+                                dest_stack = bay_copy.get_stacks(dest_col)
+                                moves.append(move.Move(bay_copy, curr_buffer, prev_pos, ending_loc, curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, cost, curr_move, dest_stack.peek(), cont_pos))
             if len(curr_move.get_onload_remaining()) > 0:
-                moves.append(move.Move(curr_bay, curr_buffer, prev_pos, (-1, 23), curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), False, prev_cost + curr_move.buffer_move_cost(curr_crane_pos, True), curr_move, None))
+                moves.append(move.Move(curr_bay, curr_buffer, prev_pos, (-1, 23), curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), False, prev_cost + curr_move.buffer_move_cost(curr_crane_pos, True), curr_move, None, None))
         else:
-            moves.append(move.Move(curr_bay, curr_buffer, prev_pos, (-1, 0), curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, prev_cost + curr_move.buffer_move_cost(curr_crane_pos, True), curr_move, None))
+            moves.append(move.Move(curr_bay, curr_buffer, prev_pos, (-1, 0), curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, prev_cost + curr_move.buffer_move_cost(curr_crane_pos, True), curr_move, None, None))
             for i in curr_move.get_onload_remaining():
                 for j in curr_bay.get_stacks():
                     if j.get_height() < j.get_max_height():
@@ -111,7 +112,7 @@ class Optimizer:
                         bay_copy.move_to_column(-1, dest_col, True, i)
                         onload_remaining = copy.deepcopy(curr_move.get_onload_remaining())
                         onload_remaining.remove(i)
-                        moves.append(move.Move(bay_copy, curr_buffer, prev_pos, ending_loc, curr_move.get_offload_remaining(), onload_remaining, True, cost, curr_move, i))
+                        moves.append(move.Move(bay_copy, curr_buffer, prev_pos, ending_loc, curr_move.get_offload_remaining(), onload_remaining, True, cost, curr_move, i, None))
         return moves
 
     def apply_balance_operations(self, curr_move) -> list["move.Move"]:

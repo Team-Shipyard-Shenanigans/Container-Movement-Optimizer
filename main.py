@@ -1,8 +1,4 @@
-import cmo_runner as Runner
+import gui
 
 
-cmo = Runner.Runner()
-
-
-while True:
-    cmo.tick()
+gui = gui.GUI()

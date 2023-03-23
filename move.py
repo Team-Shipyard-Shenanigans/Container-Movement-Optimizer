@@ -4,7 +4,7 @@ import container
 
 
 class Move:
-    def __init__(self, bay, buffer, crane_pos_initial, crane_pos_ending, offload_remaining, onload_remaining, end_in_bay, cost, parent_move, container):
+    def __init__(self, bay, buffer, crane_pos_initial, crane_pos_ending, offload_remaining, onload_remaining, end_in_bay, cost, parent_move, container, cont_pos):
         self.bay = bay
         self.buffer = buffer
         self.init_pos = crane_pos_initial
@@ -15,6 +15,7 @@ class Move:
         self.cost = cost
         self.end_in_bay = end_in_bay
         self.container = container
+        self.cont_pos = cont_pos
 
     def get_bay(self) -> Grid.ShipBay:
         return self.bay
@@ -45,6 +46,9 @@ class Move:
 
     def get_container(self) -> container.Container:
         return self.container
+
+    def get_cont_pos(self) -> tuple:
+        return self.cont_pos
 
     def get_containers_in_section(self, row_int, col_int):
         containers = []
@@ -108,3 +112,6 @@ class Move:
 
     def __hash__(self) -> int:
         return hash(self.end_pos, self.init_pos)
+
+    def get_animation(self):
+        return [self.init_pos, self.cont_pos, self.end_pos]

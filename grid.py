@@ -23,6 +23,12 @@ class Grid(ABC):
         Abstract method for subclasses of the grid class to specify their own mapping
         """
 
+    @abstractmethod
+    def index_unmap(self, location) -> int:
+        """
+        Abstract method for subclasses of the grid class to specify their own unmapping
+        """
+
     def get_stacks(self, column=None) -> list["Stack.Stack"]:
         return self.stacks if column is None else self.stacks[column]
 
@@ -165,6 +171,9 @@ class Buffer(Grid):
             row_index = int(value / 24)
             col_index = value % 24
         return (row_index, col_index)
+
+    def index_unmap(self, location) -> int:  ## 95 -> 3, 23, 3 * 24 = 72 + 23 = 95
+        return (location[0] * 24) + location[1]
 
     def __deepcopy__(self, memo):
         new_grid = Buffer()
