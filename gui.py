@@ -590,6 +590,3 @@ class GUI:
 
     def add_comment(self):
         self.write_to_log("%s commented: %s" % (self.user, self.commentEntry.get()))
-
-
-GUI()
