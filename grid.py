@@ -66,14 +66,14 @@ class Grid(ABC):
             string = string + "\n"
         return string
 
-    def move_to_column(self, origin_column, dest_column, on_ship=None, container=None):
+    def move_to_column(self, origin_column, dest_column, container=None):
         if dest_column != -1 and origin_column != -1:
             origin_stack = self.stacks[origin_column]
             dest_stack = self.stacks[dest_column]
             origin_row = origin_stack.get_max_height() - origin_stack.get_height()
             dest_row = dest_stack.get_max_height() - (dest_stack.get_height() + 1)
             cont = origin_stack.pop()
-            dest_stack.push(cont, on_ship)
+            dest_stack.push(cont)
 
             self.grid[origin_row][origin_column] = None
             self.grid[dest_row][dest_column] = cont
@@ -85,7 +85,7 @@ class Grid(ABC):
         elif dest_column != -1 and origin_column == -1 and container is not None:
             dest_stack = self.stacks[dest_column]
             dest_row = dest_stack.get_max_height() - (dest_stack.get_height() + 1)
-            dest_stack.push(container, on_ship)
+            dest_stack.push(container)
             self.grid[dest_row][dest_column] = container
         else:
             raise ValueError("Cannot move to non_existing column from non_existing column")

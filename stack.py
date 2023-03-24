@@ -17,7 +17,7 @@ class Stack:
     def get_height(self):
         return len(self.containers)
 
-    def push(self, container, on_ship=None):
+    def push(self, container):
         if len(self.containers) < self.max_height:
             self.containers.append(container)
         else:
@@ -31,3 +31,9 @@ class Stack:
 
     def __repr__(self):
         return "[Column: %s, Height: %s, Contents: %s]" % (self.column, self.get_height(), self.containers)
+
+    def has(self, containers):
+        for i in containers:
+            if i in self.containers:
+                return True
+        return False

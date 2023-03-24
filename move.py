@@ -55,7 +55,7 @@ class Move:
         for i in range(row_int[0], row_int[1]):
             for j in range(col_int[0], col_int[1]):
                 cont = self.bay.get_container(i, j)
-                if cont is not None:
+                if cont is not None and cont.get_description() != "NAN":
                     containers.append((cont, j))
         return containers
 
@@ -70,23 +70,24 @@ class Move:
 
         return base_cost + abs(cont_grab_row - crane_end_row) + abs(cont_col - crane_end_col) + 4
 
-    def column_move_cost(self, origin_column, dest_column) -> int:
-        origin_stack = self.bay.get_stacks(origin_column)
-
+    def column_move_cost(self, origin_column, dest_column, in_bay) -> int:
+        
+        origin_stack = self.bay.get_stacks(origin_column) if in_bay else self.buffer.get_stacks(origin_column)
         origin_height = origin_stack.get_height()
 
         if origin_height == 0:
             raise ValueError("Cannot compute movement cost if origin stack is empty")
 
-        dest_stack = self.bay.get_stacks(dest_column)
+        dest_stack = self.bay.get_stacks(dest_column) if self.end_in_bay else self.buffer.get_stacks(dest_column)
         dest_height = dest_stack.get_height()
-        if dest_height >= 8:
+        if dest_height >= dest_stack.get_max_height():
             return float("inf")
 
         if dest_column == origin_column:
             return 0
-
-        height = max(j.get_height() for j in self.bay.get_stacks()[min(dest_column, origin_column) : max(dest_column, origin_column)])
+        stacks = self.bay.get_stacks() if self.end_in_bay else self.buffer.get_stacks()
+        
+        height = max(j.get_height() for j in stacks[min(dest_column, origin_column) : max(dest_column, origin_column)])
         dX = abs(dest_column - origin_column)
         dY = abs(height + 1 - origin_height) + abs(height + 1 - (dest_height + 1)) if origin_height <= height else abs(dest_height + 1 - origin_height)
         return dX + dY
@@ -105,7 +106,10 @@ class Move:
         return (min(left_mass, right_mass) / max(left_mass, right_mass)) >= 0.9, left_mass, right_mass
 
     def get_top_containers(self) -> list["container.Container"]:
-        return [(i.peek(), i.get_column()) for i in self.bay.get_stacks()]
+        if self.end_in_bay:
+            return [(i.peek(), i.get_column()) for i in self.bay.get_stacks() if i.get_height() > 0 and i.peek().get_description() != "NAN"]
+        else:
+            return [(i.peek(), i.get_column()) for i in self.buffer.get_stacks() if i.get_height() > 0 and i.peek().get_description() != "NAN"]
 
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Move) and self.bay == __o.bay and self.buffer == __o.buffer and self.init_pos == __o.init_pos and self.end_pos == __o.end_pos and self.end_in_bay == __o.end_in_bay

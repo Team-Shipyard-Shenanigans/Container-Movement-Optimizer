@@ -7,9 +7,9 @@ class Container:
     """A class to represent a container data"""
 
     def __init__(self, weight=0, description="EMPTY", on_ship=True):
-        self.weight = weight
-        self.description = description
-        self.on_ship = on_ship
+        self.weight = int(weight)
+        self.description = str(description)
+        self.on_ship = bool(on_ship)
 
     def get_description(self) -> str:
         """Returns the container's description as in the manifest"""
@@ -28,7 +28,7 @@ class Container:
         return "%s" % self.description
 
     def manifest_format(self, row, column) -> str:
-        return "[%02d, %02d], {%05d}, %s\n" % (8 - row, column + 1, self.weight, self.description)
+        return "[%02d, %02d], {%05d}, %s\n" % (8 - int(row), int(column) + 1, int(self.weight), str(self.description))
 
     def __eq__(self, __o) -> bool:
         return isinstance(__o, Container) and self.description == __o.description
