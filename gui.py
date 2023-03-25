@@ -42,6 +42,7 @@ class GUI:
         self.optimizer = optimizer.Optimizer()
         self.animation = None
         self.time_estimate = 0
+        self.time_total = 0
         self.onloadSelected = False
         self.offloadSelected = False
         self.task_complete = False
@@ -76,12 +77,12 @@ class GUI:
 
         # middle left frame
         self.middleLeftFrame = tk.Frame(self.middleFrame)
-        self.middleLeftFrame.grid(row=0, column=0, pady=150, sticky="sw")
+        self.middleLeftFrame.grid(row=0, column=0, padx=50, pady=150, sticky="sw")
         # self.middleFrame.add(self.middleLeftFrame)
 
         # middle right frame
         self.middleRightFrame = tk.Frame(self.middleFrame)
-        self.middleRightFrame.grid(row=0, column=1, padx=400, pady=150, sticky="se")
+        self.middleRightFrame.grid(row=0, column=1, padx=225, pady=150, sticky="se")
         # self.middleFrame.add(self.middleRightFrame)
 
         # separator bw middleFrame and bottomFrame
@@ -241,8 +242,8 @@ class GUI:
                 self.onloadList = []
 
     def update_time_estimate(self):
-        hours = self.time_estimate / 60
-        minutes = self.time_estimate % 60
+        hours = int(self.time_estimate / 60)
+        minutes = int(self.time_estimate % 60)
         self.currTimeEstimateDisplay.config(text="%2dH %2dM" % (hours, minutes))
 
     # task selection pop up
@@ -356,7 +357,6 @@ class GUI:
     def generate_animation(self, move_tree):
         num_steps = 0
         move = move_tree[0]
-        time_total = 0
         animation = []
         time_total = move.get_cost()
         while move is not None:
@@ -368,6 +368,7 @@ class GUI:
 
         self.total_steps = num_steps - 1
         self.time_estimate = time_total
+        self.time_total = time_total
         self.animation = animation
         self.update_time_estimate()
         self.currStepDisplay.config(text=str(self.current_step) + "/" + str(self.total_steps))
@@ -386,7 +387,8 @@ class GUI:
         curr_cost = curr_move.get_cost()
         curr_buff = curr_move.get_buffer()
         curr_move_end_in_bay = curr_move.get_in_bay()
-        prev_move_end_in_bay = self.animation[index + 1].get_in_bay()
+        prev_move = self.animation[index + 1]
+        prev_move_end_in_bay = prev_move.get_in_bay()
         animation = curr_move.get_animation()
 
         self.update_manifest(curr_bay)
@@ -420,7 +422,7 @@ class GUI:
         elif end_pos == (-1, 23):
             str_end_pos = "Buffer"
         else:
-            str_end_pos = str((end_pos[0] + 1, end_pos[1] + 2))
+            str_end_pos = str((end_pos[0] + 2, end_pos[1] + 1))
 
         if init_pos == (-1, 0):
             str_init_pos = "Ship Bay"
@@ -428,13 +430,13 @@ class GUI:
             str_init_pos = "Buffer"
         else:
             str_init_pos = str((init_pos[0] + 1, init_pos[1] + 1))
-
-        str_cont_pos = str((cont_pos[0] + 1, cont_pos[1] + 2))
+        if cont_pos is not None:
+            str_cont_pos = str((cont_pos[0] + 2, cont_pos[1] + 1))
 
         if cont_pos is not None and cont_to_move is not None:
-            if cont_to_move in prev_move_end_in_bay.get_offload_list():
-                self.display_move("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description(), str_end_pos))
-                self.write_to_log("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description(), str_end_pos))
+            if cont_to_move in prev_move.get_offload_remaining():
+                self.display_move("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description()))
+                self.write_to_log("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description()))
             else:
                 self.display_move("Step %s: Move Crane from %s to %s, then move container %s to %s" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description(), str_end_pos))
                 self.write_to_log("Step %s: Move Crane from %s to %s, then move container %s to %s" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description(), str_end_pos))
@@ -478,7 +480,7 @@ class GUI:
             if cont_pos is not None:
                 cont = curr_bay.index_unmap(cont_pos) + curr_bay.get_columns()
                 self.bayListMain[cont][1].config(background="red")
-            if cont_to_move not in prev_move_end_in_bay.get_offload_list():
+            if cont_to_move not in prev_move.get_offload_remaining():
                 self.bufferList[end][1].config(background="green")
             self.bayListMain[init][1].config(background="blue")
         elif curr_move_end_in_bay and not prev_move_end_in_bay:
@@ -513,8 +515,9 @@ class GUI:
             self.bufferList[end][1].config(background="green")
         else:
             print("Error in animation")
-
-        self.time_estimate = curr_cost
+        print("Time estimate: %s" % self.time_estimate)
+        self.time_estimate = self.time_total - curr_cost
+        print("Current cost: %s" % curr_cost)
         self.update_time_estimate()
 
     def read_manifest(self):
