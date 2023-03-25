@@ -160,8 +160,6 @@ class Optimizer:
                         bay_copy.move_to_column(-1, dest_col, i)
                         buffer_copy.move_to_column(j, -1, i)
                         onload_copy = copy.deepcopy(curr_move.get_onload_remaining())
-                        onload_copy.append(origin_stack.peek())
-                        onload_copy = copy.deepcopy(curr_move.get_onload_remaining())
                         onload_copy.remove(origin_stack.peek())
                         moves.append(move.Move(bay_copy, buffer_copy, prev_pos, ending_loc, curr_move.get_offload_remaining(), onload_copy, True, cost, curr_move, origin_stack.peek(), cont_pos))
 
