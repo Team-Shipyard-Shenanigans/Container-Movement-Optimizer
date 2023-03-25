@@ -34,11 +34,11 @@ class Optimizer:
             # print("Choosing: Move To %s From %s End in Bay? %s, F(N) = %s, H(N) = %s, G(N) = %s" % (min_node[1].get_end_pos(), min_node[1].get_init_pos(), min_node[1].get_in_bay(), f_1, f_1 - min_node[1].get_cost(), min_node[1].get_cost()))
 
     def balance(self, bay, buffer):
-        nodes = [move.Move(bay, buffer, None, (-1, 0), None, None, True, 0, None, None, None)]
-        
-        if(self.check_sift(nodes[0])):
+        nodes = [move.Move(bay, buffer, None, (-1, 0), [], [], True, 0, None, None, None)]
+
+        if self.check_sift(nodes[0]):
             return self.sift(bay, buffer)
-        
+
         min_index = 0
         nodes_expanded = 0
         max_nodes_in_queue = 0
@@ -47,7 +47,7 @@ class Optimizer:
             max_nodes_in_queue = max(max_nodes_in_queue, len(nodes))
             curr = nodes.pop(min_index)  ## Remove the smallest cost node from the queue
 
-            if curr.check_balanced()[0]:  ## If our popped node is our goal state, we've solved the puzzle!
+            if curr.check_balanced()[0] and len(curr.get_onload_remaining()) == 0:  ## If our popped node is our goal state, we've solved the puzzle!
                 return curr, nodes_expanded, max_nodes_in_queue  ## return search information to main function for output. Note: g_n = depth of the tree for any node)
             children = self.apply_balance_operations(curr)
             for i in children:
@@ -98,7 +98,7 @@ class Optimizer:
                                 bay_copy.move_to_column(j, dest_col)
                                 dest_stack = bay_copy.get_stacks(dest_col)
                                 moves.append(move.Move(bay_copy, curr_buffer, prev_pos, ending_loc, curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, cost, curr_move, dest_stack.peek(), cont_pos))
-                        for i in curr_buffer.get_stacks(): ## for all destination locations within the bay
+                        for i in curr_buffer.get_stacks():  ## for all destination locations within the bay
                             dest_col = i.get_column()
                             dest_height = i.get_max_height() - (i.get_height() + 1)
                             if i.get_height() < i.get_max_height():
@@ -141,7 +141,7 @@ class Optimizer:
             origin_max_height = origin_stack.get_max_height()
             origin_height = origin_stack.get_height()
             cont_pos = (origin_max_height - (origin_height + 1), j)
-            for i in curr_bay.get_stacks(): ## for all destination locations within the bay
+            for i in curr_bay.get_stacks():  ## for all destination locations within the bay
                 dest_col = i.get_column()
                 dest_height = i.get_max_height() - (i.get_height() + 1)
                 if on_ship:
@@ -159,9 +159,11 @@ class Optimizer:
                         ending_loc = (i.get_max_height() - (i.get_height() + 2), dest_col)
                         bay_copy.move_to_column(-1, dest_col, i)
                         buffer_copy.move_to_column(j, -1, i)
-                        moves.append(move.Move(bay_copy, buffer_copy, prev_pos, ending_loc, None, None, True, cost, curr_move, i, cont_pos))
-            
-            for i in curr_buffer.get_stacks(): ## for all destination locations within the bay
+                        onload_copy = copy.deepcopy(curr_move.get_onload_remaining())
+                        onload_copy.remove(origin_stack.peek())
+                        moves.append(move.Move(bay_copy, buffer_copy, prev_pos, ending_loc, curr_move.get_offload_remaining(), onload_copy, True, cost, curr_move, origin_stack.peek(), cont_pos))
+
+            for i in curr_buffer.get_stacks():  ## for all destination locations within the bay
                 dest_col = i.get_column()
                 dest_height = i.get_max_height() - (i.get_height() + 1)
                 if not on_ship:
@@ -170,7 +172,7 @@ class Optimizer:
                         cost = prev_cost + buffer_copy.manhattan(prev_pos, cont_pos) + curr_move.column_move_cost(j, dest_col, on_ship)
                         ending_loc = (i.get_max_height() - (i.get_height() + 2), dest_col)
                         buffer_copy.move_to_column(j, dest_col)
-                        moves.append(move.Move(curr_bay, buffer_copy, prev_pos, ending_loc, None, None, True, cost, curr_move, origin_stack.peek(), cont_pos))
+                        moves.append(move.Move(curr_bay, buffer_copy, prev_pos, ending_loc, curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, cost, curr_move, origin_stack.peek(), cont_pos))
                 else:
                     if i.get_height() < i.get_max_height():
                         bay_copy = copy.deepcopy(curr_bay)
@@ -179,7 +181,9 @@ class Optimizer:
                         ending_loc = (i.get_max_height() - (i.get_height() + 2), dest_col)
                         buffer_copy.move_to_column(-1, dest_col, origin_stack.peek())
                         bay_copy.move_to_column(j, -1, origin_stack.peek())
-                        moves.append(move.Move(bay_copy, buffer_copy, prev_pos, ending_loc, None, None, True, cost, curr_move, origin_stack.peek(), cont_pos))
+                        onload_copy = copy.deepcopy(curr_move.get_onload_remaining())
+                        onload_copy.append(origin_stack.peek())
+                        moves.append(move.Move(bay_copy, buffer_copy, prev_pos, ending_loc, curr_move.get_offload_remaining(), onload_copy, True, cost, curr_move, origin_stack.peek(), cont_pos))
         if on_ship:
             moves.append(move.Move(curr_bay, curr_buffer, prev_pos, (-1, 23), curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), False, prev_cost + curr_move.buffer_move_cost(prev_pos, False), curr_move, None, None))
         else:
@@ -310,8 +314,8 @@ class Optimizer:
         return False
 
     def sift(self, bay, buffer):
-        nodes = [move.Move(bay, buffer, None, (-1, 0), None, None, True, 0, None, None, None)]
-        
+        nodes = [move.Move(bay, buffer, None, (-1, 0), [], [], True, 0, None, None, None)]
+
         min_index = 0
         nodes_expanded = 0
         max_nodes_in_queue = 0
@@ -334,12 +338,12 @@ class Optimizer:
             for i in enumerate(nodes):
                 f_1 = self.sift_heuristic(min_node[1], goal) + min_node[1].get_cost()
                 f_2 = self.sift_heuristic(i[1], goal) + i[1].get_cost()
-                #print("Move %s To %s From %s End in Bay? %s, F(N) = %s, H(N) = %s, G(N) = %s" % (i[1].get_container(), i[1].get_end_pos(), i[1].get_init_pos(), i[1].get_in_bay(), f_2, f_2 - i[1].get_cost(), i[1].get_cost()))
-                #print(i[1].get_bay())
+                # print("Move %s To %s From %s End in Bay? %s, F(N) = %s, H(N) = %s, G(N) = %s" % (i[1].get_container(), i[1].get_end_pos(), i[1].get_init_pos(), i[1].get_in_bay(), f_2, f_2 - i[1].get_cost(), i[1].get_cost()))
+                # print(i[1].get_bay())
                 if f_1 >= f_2:
                     min_node = i
             min_index = min_node[0]
-            #print("Choosing: Move %s To %s From %s End in Bay? %s, F(N) = %s, H(N) = %s, G(N) = %s" % (min_node[1].get_container(), min_node[1].get_end_pos(), min_node[1].get_init_pos(), min_node[1].get_in_bay(), f_1, f_1 - min_node[1].get_cost(), min_node[1].get_cost()))
+            # print("Choosing: Move %s To %s From %s End in Bay? %s, F(N) = %s, H(N) = %s, G(N) = %s" % (min_node[1].get_container(), min_node[1].get_end_pos(), min_node[1].get_init_pos(), min_node[1].get_in_bay(), f_1, f_1 - min_node[1].get_cost(), min_node[1].get_cost()))
 
     def sift_heuristic(self, curr_move, goal_state):
         bay = curr_move.get_bay()
@@ -352,26 +356,25 @@ class Optimizer:
             for j in range(curr_move.get_bay().get_columns()):
                 if grid[i][j] != goal_state[i][j] and grid[i][j] is not None and grid[i][j].get_description() != "NAN":
                     mismatch.append((grid[i][j]))
-        
-        
+
         for stack in bay.get_stacks():
             temp = []
             # print(stack)
             # print(cost)
             while stack.peek() is not None and stack.has(mismatch):
-                goal_indices = self.get_sift_goal_loc(curr_move, (stack.peek(), stack.get_column()))   
+                goal_indices = self.get_sift_goal_loc(curr_move, (stack.peek(), stack.get_column()))
                 cost += bay.manhattan(prev_pos, (stack.get_max_height() - (stack.get_height() + 1), stack.get_column()))
                 dest_stack = bay.get_stacks(goal_indices[1])
                 dest_row = dest_stack.get_max_height() - (dest_stack.get_height() + 1)
-                min_cost = curr_move.column_move_cost(stack.get_column(), goal_indices[1], True) + abs(goal_indices[0] - dest_row) 
+                min_cost = curr_move.column_move_cost(stack.get_column(), goal_indices[1], True) + abs(goal_indices[0] - dest_row)
                 prev_pos = (dest_row, goal_indices[1])
                 cost += min_cost
-                temp.append(stack.pop())      
+                temp.append(stack.pop())
             for k in reversed(temp):
                 stack.push(k)
-        
+
         return cost
-    
+
     def get_sift_goal_loc(self, curr_move, container):
         containers = curr_move.get_containers_in_section((0, curr_move.get_bay().get_rows()), (0, curr_move.get_bay().get_columns()))
         containers.sort(key=lambda x: x[0].get_weight(), reverse=True)
@@ -387,19 +390,19 @@ class Optimizer:
 
         for i in range(rows):
             for j in range(cols):
-                if(curr_move.get_bay().get_container(i, j) is not None and curr_move.get_bay().get_container(i, j).get_description() == "NAN"):
+                if curr_move.get_bay().get_container(i, j) is not None and curr_move.get_bay().get_container(i, j).get_description() == "NAN":
                     goal[i][j] = curr_move.get_bay().get_grid()[i][j]
 
         containers = curr_move.get_containers_in_section((0, rows), (0, cols))
         containers.sort(key=lambda x: x[0].get_weight(), reverse=True)
-        
+
         index_adjustment = 0
         for i in enumerate(containers):
             goal_loc = self.index_mapper(i[0] + index_adjustment)
-            if (goal[goal_loc[0]][goal_loc[1]] is None):
+            if goal[goal_loc[0]][goal_loc[1]] is None:
                 goal[goal_loc[0]][goal_loc[1]] = i[1][0]
             else:
-                while(goal[goal_loc[0]][goal_loc[1]] is not None):
+                while goal[goal_loc[0]][goal_loc[1]] is not None:
                     index_adjustment += 1
                     goal_loc = self.index_mapper(i[0] + index_adjustment)
                 goal[goal_loc[0]][goal_loc[1]] = i[1][0]

@@ -436,7 +436,7 @@ class GUI:
             str_cont_pos = str((cont_pos[0] + 2, cont_pos[1] + 1))
 
         if cont_pos is not None and cont_to_move is not None:
-            if cont_to_move in prev_move.get_offload_remaining():
+            if prev_move is not None and cont_to_move in prev_move.get_offload_remaining():
                 self.display_move("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description()))
                 self.write_to_log("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description()))
             else:
