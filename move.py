@@ -71,7 +71,6 @@ class Move:
         return base_cost + abs(cont_grab_row - crane_end_row) + abs(cont_col - crane_end_col) + 4
 
     def column_move_cost(self, origin_column, dest_column, in_bay) -> int:
-        
         origin_stack = self.bay.get_stacks(origin_column) if in_bay else self.buffer.get_stacks(origin_column)
         origin_height = origin_stack.get_height()
 
@@ -86,7 +85,7 @@ class Move:
         if dest_column == origin_column:
             return 0
         stacks = self.bay.get_stacks() if self.end_in_bay else self.buffer.get_stacks()
-        
+
         height = max(j.get_height() for j in stacks[min(dest_column, origin_column) : max(dest_column, origin_column)])
         dX = abs(dest_column - origin_column)
         dY = abs(height + 1 - origin_height) + abs(height + 1 - (dest_height + 1)) if origin_height <= height else abs(dest_height + 1 - origin_height)
@@ -98,8 +97,8 @@ class Move:
         for i in range(0, 8):
             for j in range(0, 12):
                 cont = self.get_bay().get_container(i, j)
-                if cont is not None:
-                    if int(j / 6) % 2 == 0:
+                if cont is not None and cont.get_description() != "NAN":
+                    if j < 6:
                         left_mass += cont.get_weight()
                     else:
                         right_mass += cont.get_weight()
@@ -107,9 +106,9 @@ class Move:
 
     def get_top_containers(self) -> list["container.Container"]:
         if self.end_in_bay:
-            return [(i.peek(), i.get_column()) for i in self.bay.get_stacks() if i.get_height() > 0 and i.peek().get_description() != "NAN"]
+            return [(i.peek(), i.get_column()) for i in self.bay.get_stacks() if (i.get_height() > 0 and i.peek().get_description() != "NAN")]
         else:
-            return [(i.peek(), i.get_column()) for i in self.buffer.get_stacks() if i.get_height() > 0 and i.peek().get_description() != "NAN"]
+            return [(i.peek(), i.get_column()) for i in self.buffer.get_stacks() if (i.get_height() > 0 and i.peek().get_description() != "NAN")]
 
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Move) and self.bay == __o.bay and self.buffer == __o.buffer and self.init_pos == __o.init_pos and self.end_pos == __o.end_pos and self.end_in_bay == __o.end_in_bay

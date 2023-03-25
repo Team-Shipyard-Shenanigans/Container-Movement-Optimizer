@@ -201,6 +201,24 @@ class GUI:
         fileName = os.path.basename(filePath)
         self.currManifestFileDisplay.config(text=fileName)
         self.manifest = filePath
+        self.task = None
+        self.offloadList = []
+        self.onloadList = []
+        self.bufferList = []
+        self.current_step = 0
+        self.total_steps = 999
+        self.ship_bay = Grid.ShipBay()
+        self.buffer = Grid.Buffer()
+        self.optimizer = optimizer.Optimizer()
+        self.animation = None
+        self.time_estimate = 0
+        self.time_total = 999
+        self.onloadSelected = False
+        self.offloadSelected = False
+        self.task_complete = False
+        self.bayListMain = []
+        self.bayListOffload = []
+        self.currTaskDisplay.config(text="")
         self.write_to_log("Manifest %s has been selected." % (self.manifest))
         self.read_manifest()
         self.write_to_log("Parsing manifest %s is complete." % (self.manifest))
@@ -240,11 +258,16 @@ class GUI:
                 self.offloadSelected = False
                 self.offloadList = []
                 self.onloadList = []
+                self.update_time_estimate(clear=True)
+                self.display_move("")
 
-    def update_time_estimate(self):
-        hours = int(self.time_estimate / 60)
-        minutes = int(self.time_estimate % 60)
-        self.currTimeEstimateDisplay.config(text="%2dH %2dM" % (hours, minutes))
+    def update_time_estimate(self, clear=False):
+        if not clear:
+            hours = int(self.time_estimate / 60)
+            minutes = int(self.time_estimate % 60)
+            self.currTimeEstimateDisplay.config(text="%2dH %2dM" % (hours, minutes))
+        else:
+            self.currTimeEstimateDisplay.config(text="")
 
     # task selection pop up
     def choose_task(self):

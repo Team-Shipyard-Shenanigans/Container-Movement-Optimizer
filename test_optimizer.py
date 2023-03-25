@@ -78,7 +78,7 @@ def test_load_unload():
 
 
 def test_balance_1():
-    manifest = open("case3.txt", "r", encoding="ascii")
+    manifest = open("case1.txt", "r", encoding="ascii")
     ship_bay = Grid.ShipBay()
     buffer = Grid.Buffer()
     for line in manifest:
@@ -118,7 +118,17 @@ def test_sift():
 
     return o.balance(ship_bay, buffer)
 
-vals, n_expanded, max_n = test_load_unload()
+
+# vals, n_expanded, max_n = test_load_unload()
+
+# while vals is not None:
+#     print(vals.get_bay())
+#     vals = vals.get_parent_move()
+
+# print("Expanded: %s" % n_expanded)
+# print("Max: %s" % max_n)
+
+vals, n_expanded, max_n = test_balance_1()
 
 while vals is not None:
     print(vals.get_bay())
@@ -126,3 +136,12 @@ while vals is not None:
 
 print("Expanded: %s" % n_expanded)
 print("Max: %s" % max_n)
+
+# vals, n_expanded, max_n = test_sift()
+
+# while vals is not None:
+#     print(vals.get_bay())
+#     vals = vals.get_parent_move()
+
+# print("Expanded: %s" % n_expanded)
+# print("Max: %s" % max_n)

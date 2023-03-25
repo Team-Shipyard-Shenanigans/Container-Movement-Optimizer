@@ -44,7 +44,7 @@ class Grid(ABC):
             stack = Stack.Stack(j, self.rows)
             for i in range(self.rows - 1, -1, -1):
                 cont = self.grid[i][j]
-                if cont is not None and cont.get_description() != " NAN":
+                if cont is not None:
                     stack.push(cont)
             self.stacks.append(stack)
 

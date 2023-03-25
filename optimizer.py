@@ -42,12 +42,14 @@ class Optimizer:
         min_index = 0
         nodes_expanded = 0
         max_nodes_in_queue = 0
+        # while len(nodes) > 0:
         while len(nodes) > 0:
             nodes_expanded += 1
             max_nodes_in_queue = max(max_nodes_in_queue, len(nodes))
             curr = nodes.pop(min_index)  ## Remove the smallest cost node from the queue
-
-            if curr.check_balanced()[0] and len(curr.get_onload_remaining()) == 0:  ## If our popped node is our goal state, we've solved the puzzle!
+            balanced, left_mass, right_mass = curr.check_balanced()
+            print("Left Mass: %s, Right Mass: %s" % (left_mass, right_mass))
+            if balanced and len(curr.get_onload_remaining()) == 0:  ## If our popped node is our goal state, we've solved the puzzle!
                 return curr, nodes_expanded, max_nodes_in_queue  ## return search information to main function for output. Note: g_n = depth of the tree for any node)
             children = self.apply_balance_operations(curr)
             for i in children:
@@ -62,7 +64,8 @@ class Optimizer:
                 if f_1 >= f_2:
                     min_node = i
             min_index = min_node[0]
-            # print("Choosing: Move %s To %s From %s End in Bay? %s, F(N) = %s, H(N) = %s, G(N) = %s" % (min_node[1].get_container(), min_node[1].get_end_pos(), min_node[1].get_init_pos(), min_node[1].get_in_bay(), f_1, f_1 - min_node[1].get_cost(), min_node[1].get_cost()))
+            # print("Choosing: Move %s To %s From %s End in Bay? %s, F(N) = %s, H(N) = %s, G(N) = %s"% (min_node[1].get_container(), min_node[1].get_end_pos(), min_node[1].get_init_pos(), min_node[1].get_in_bay(), f_1, f_1 - min_node[1].get_cost(), min_node[1].get_cost()))
+            # print(min_node[1].get_bay())
 
     def apply_load_operations(self, curr_move):
         moves = []
@@ -96,9 +99,8 @@ class Optimizer:
                                 cost = prev_cost + bay_copy.manhattan(prev_pos, cont_pos) + curr_move.column_move_cost(j, dest_col, on_ship)
                                 ending_loc = (i.get_max_height() - (i.get_height() + 2), dest_col)
                                 bay_copy.move_to_column(j, dest_col)
-                                dest_stack = bay_copy.get_stacks(dest_col)
-                                moves.append(move.Move(bay_copy, curr_buffer, prev_pos, ending_loc, curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, cost, curr_move, dest_stack.peek(), cont_pos))
-                        for i in curr_buffer.get_stacks():  ## for all destination locations within the bay
+                                moves.append(move.Move(bay_copy, curr_buffer, prev_pos, ending_loc, curr_move.get_offload_remaining(), curr_move.get_onload_remaining(), True, cost, curr_move, origin_stack.peek(), cont_pos))
+                        for i in curr_buffer.get_stacks():  ## for all destination locations within the buffer
                             dest_col = i.get_column()
                             dest_height = i.get_max_height() - (i.get_height() + 1)
                             if i.get_height() < i.get_max_height():
@@ -145,7 +147,7 @@ class Optimizer:
                 dest_col = i.get_column()
                 dest_height = i.get_max_height() - (i.get_height() + 1)
                 if on_ship:
-                    if i.get_height() < curr_bay.get_rows() and dest_col != j:
+                    if i.get_height() < i.get_max_height() and dest_col != j:
                         bay_copy = copy.deepcopy(curr_bay)
                         cost = prev_cost + bay_copy.manhattan(prev_pos, cont_pos) + curr_move.column_move_cost(j, dest_col, on_ship)
                         ending_loc = (i.get_max_height() - (i.get_height() + 2), dest_col)
@@ -157,13 +159,13 @@ class Optimizer:
                         buffer_copy = copy.deepcopy(curr_buffer)
                         cost = prev_cost + curr_move.buffer_move_cost(prev_pos, False) + dest_col + abs(-1 - dest_height)
                         ending_loc = (i.get_max_height() - (i.get_height() + 2), dest_col)
-                        bay_copy.move_to_column(-1, dest_col, i)
-                        buffer_copy.move_to_column(j, -1, i)
+                        bay_copy.move_to_column(-1, dest_col, origin_stack.peek())
+                        buffer_copy.move_to_column(j, -1, origin_stack.peek())
                         onload_copy = copy.deepcopy(curr_move.get_onload_remaining())
                         onload_copy.remove(origin_stack.peek())
                         moves.append(move.Move(bay_copy, buffer_copy, prev_pos, ending_loc, curr_move.get_offload_remaining(), onload_copy, True, cost, curr_move, origin_stack.peek(), cont_pos))
 
-            for i in curr_buffer.get_stacks():  ## for all destination locations within the bay
+            for i in curr_buffer.get_stacks():  ## for all destination locations within the buffer
                 dest_col = i.get_column()
                 dest_height = i.get_max_height() - (i.get_height() + 1)
                 if not on_ship:
@@ -204,7 +206,7 @@ class Optimizer:
                 origin_col = j[0]
                 stack = bay.get_stacks(origin_col)
                 temp = []
-                while stack.peek() is not None and stack.peek() != i:
+                while stack.peek() is not None and stack.peek().get_description() != "NAN" and stack.peek() != i:
                     cost += bay.manhattan(prev_pos, (stack.get_max_height() - (stack.get_height() + 1), origin_col))
                     prev_pos, min_cost = self.get_min_move_col(origin_col, curr_move, True, True)
                     cost += min_cost
@@ -267,7 +269,7 @@ class Optimizer:
         lesser_mass = min(left_mass, right_mass)
         greater_mass = max(left_mass, right_mass)
         dest_side = 5 if left_mass >= right_mass else 6
-        balanced_mass = (lesser_mass + greater_mass) / 2
+        balanced_mass = int((lesser_mass + greater_mass) / 2)
 
         deficit = balanced_mass - lesser_mass
 
@@ -280,14 +282,14 @@ class Optimizer:
         while lesser_mass / greater_mass < 0.9:
             target = None
             for i in conts_to_move:
-                if i[0].get_weight() <= deficit:
+                if i[0].get_weight() <= deficit * 1.1:
                     target = i
             if target is None:
-                break
+                return 100000000
             j = target[1]
             stack = bay.get_stacks(j)
             temp = []
-            while stack.peek() is not None and stack.peek() != target[0]:
+            while stack.peek() is not None and stack.peek().get_description() != "NAN" and stack.peek() != target[0]:
                 cost += bay.manhattan(prev_pos, (stack.get_max_height() - (stack.get_height() + 1), j))
                 prev_pos, min_cost = self.get_min_move_col(j, curr_move, True, True)
                 cost += min_cost
@@ -309,7 +311,7 @@ class Optimizer:
         balanced_mass = (left_mass + right_mass) / 2
 
         for i in move.get_containers_in_section((0, move.get_bay().get_rows()), (0, move.get_bay().get_columns())):
-            if i[0].get_weight() > balanced_mass:
+            if i[0].get_weight() > balanced_mass * 1.1:
                 return True
         return False
 
@@ -361,7 +363,7 @@ class Optimizer:
             temp = []
             # print(stack)
             # print(cost)
-            while stack.peek() is not None and stack.has(mismatch):
+            while stack.peek() is not None and stack.peek().get_description() != "NAN" and stack.has(mismatch):
                 goal_indices = self.get_sift_goal_loc(curr_move, (stack.peek(), stack.get_column()))
                 cost += bay.manhattan(prev_pos, (stack.get_max_height() - (stack.get_height() + 1), stack.get_column()))
                 dest_stack = bay.get_stacks(goal_indices[1])
