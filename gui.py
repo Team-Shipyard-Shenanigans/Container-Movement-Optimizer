@@ -539,8 +539,8 @@ class GUI:
             self.write_to_log("Task is not complete. Please complete the task before downloading the manifest.")
             return
 
-        manifest_to_download = open(self.manifest.split(".")[0] + "OUTBOUND.txt", "w", encoding="ascii")
-        manifest_to_read_from = open(self.manifest.split(".")[0] + "TEMP.txt", "r", encoding="ascii")
+        manifest_to_download = open(self.manifest.split(".txt")[0] + "OUTBOUND.txt", "w", encoding="ascii")
+        manifest_to_read_from = open(self.manifest.split(".txt")[0] + "TEMP.txt", "r", encoding="ascii")
 
         manifest_lines = manifest_to_read_from.readlines()
         for line in manifest_lines[::-1]:
@@ -551,7 +551,7 @@ class GUI:
         manifest_to_read_from.close()
 
     def update_manifest(self, bay):
-        manifest = open(self.manifest.split(".")[0] + "TEMP.txt", "w", encoding="ascii")
+        manifest = open(self.manifest.split(".txt")[0] + "TEMP.txt", "w", encoding="ascii")
         grid = bay.get_grid()
         for i in range(8):
             for j in range(12):
