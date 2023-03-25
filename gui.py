@@ -349,7 +349,9 @@ class GUI:
             self.write_to_log("Finished calculation, displaying to grid")
 
     def calculate_balance(self):
+        self.write_to_log("Calculating balancing...")
         self.generate_animation(self.optimizer.balance(self.ship_bay, self.buffer))
+        self.write_to_log("Finished calculation, displaying to grid")
 
     def get_root(self):
         return self.root
@@ -434,7 +436,7 @@ class GUI:
             str_cont_pos = str((cont_pos[0] + 2, cont_pos[1] + 1))
 
         if cont_pos is not None and cont_to_move is not None:
-            if cont_to_move in prev_move.get_offload_remaining():
+            if prev_move is not None and cont_to_move in prev_move.get_offload_remaining():
                 self.display_move("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description()))
                 self.write_to_log("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description()))
             else:
@@ -539,8 +541,8 @@ class GUI:
             self.write_to_log("Task is not complete. Please complete the task before downloading the manifest.")
             return
 
-        manifest_to_download = open(self.manifest.split(".")[0] + "OUTBOUND.txt", "w", encoding="ascii")
-        manifest_to_read_from = open(self.manifest.split(".")[0] + "TEMP.txt", "r", encoding="ascii")
+        manifest_to_download = open(self.manifest.split(".txt")[0] + "OUTBOUND.txt", "w", encoding="ascii")
+        manifest_to_read_from = open(self.manifest.split(".txt")[0] + "TEMP.txt", "r", encoding="ascii")
 
         manifest_lines = manifest_to_read_from.readlines()
         for line in manifest_lines[::-1]:
@@ -551,7 +553,7 @@ class GUI:
         manifest_to_read_from.close()
 
     def update_manifest(self, bay):
-        manifest = open(self.manifest.split(".")[0] + "TEMP.txt", "w", encoding="ascii")
+        manifest = open(self.manifest.split(".txt")[0] + "TEMP.txt", "w", encoding="ascii")
         grid = bay.get_grid()
         for i in range(8):
             for j in range(12):
