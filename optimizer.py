@@ -314,7 +314,7 @@ class Optimizer:
         return False
 
     def sift(self, bay, buffer):
-        nodes = [move.Move(bay, buffer, None, (-1, 0), None, None, True, 0, None, None, None)]
+        nodes = [move.Move(bay, buffer, None, (-1, 0), [], [], True, 0, None, None, None)]
 
         min_index = 0
         nodes_expanded = 0
