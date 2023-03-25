@@ -1,14 +1,10 @@
 import os
 import tkinter as tk
-from tkinter import ttk
 from tkinter import filedialog
 from tkinter import tix
 from tkinter.constants import *
 from tkinter import *
 
-# import tkinter.tix as tix
-# from tkinter.tix import Balloon
-# from ttkwidgets import Balloon
 
 import time
 import container as Container
@@ -18,8 +14,7 @@ import grid as Grid
 
 class GUI:
     def __init__(self):
-        self.root = tk.Tk()
-        self.root.tk.eval("package require Tix")
+        self.root = tix.Tk()
         self.root.title("Container Movement Optimizer")
         self.root.state("zoomed")
         # self.root.configure(background = "white")
@@ -294,7 +289,7 @@ class GUI:
                 containerBox = tk.Label(self.containerGrid, background="white", bd=4, relief="raised", width=4, height=2, text=container.get_description() if container is not None else "")
                 containerBox.grid(row=row, column=column)
                 containerBox.grid_propagate(False)
-                containerName = tix.Balloon(self.containerGrid, initwait=50)
+                containerName = tix.Balloon(self.containerGrid)
                 containerName.bind_widget(containerBox, balloonmsg=container.get_description() if container is not None else "")
                 self.bayListOffload.append((container.get_description() if container is not None else "None", containerBox))
                 containerBox.bind("<Button-1>", lambda event, row=row, column=column: self.select_offload_container(row, column))
@@ -363,11 +358,11 @@ class GUI:
         move = move_tree[0]
         time_total = 0
         animation = []
+        time_total = move.get_cost()
         while move is not None:
             print("Move %s from %s to %s" % (move.get_container(), move.get_init_pos(), move.get_end_pos()))
             print(move.get_bay())
             num_steps += 1
-            time_total += move.get_cost()
             animation.append(move)
             move = move.get_parent_move()
 
@@ -425,21 +420,28 @@ class GUI:
         elif end_pos == (-1, 23):
             str_end_pos = "Buffer"
         else:
-            str_end_pos = str(end_pos)
+            str_end_pos = str((end_pos[0] + 1, end_pos[1] + 2))
 
         if init_pos == (-1, 0):
             str_init_pos = "Ship Bay"
         elif init_pos == (-1, 23):
             str_init_pos = "Buffer"
         else:
-            str_init_pos = str(init_pos)
+            str_init_pos = str((init_pos[0] + 1, init_pos[1] + 1))
+
+        str_cont_pos = str((cont_pos[0] + 1, cont_pos[1] + 2))
 
         if cont_pos is not None and cont_to_move is not None:
-            self.display_move("Step %s: Move Crane from %s to %s, then move container %s to %s" % (self.current_step + 1, str_init_pos, cont_pos, cont_to_move.get_description(), str_end_pos))
-            self.write_to_log("Step %s: Move Crane from %s to %s, then move container %s to %s" % (self.current_step + 1, str_init_pos, cont_pos, cont_to_move.get_description(), str_end_pos))
+            if cont_to_move in prev_move_end_in_bay.get_offload_list():
+                self.display_move("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description(), str_end_pos))
+                self.write_to_log("Step %s: Move Crane from %s to %s, then offload container %s to truck" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description(), str_end_pos))
+            else:
+                self.display_move("Step %s: Move Crane from %s to %s, then move container %s to %s" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description(), str_end_pos))
+                self.write_to_log("Step %s: Move Crane from %s to %s, then move container %s to %s" % (self.current_step + 1, str_init_pos, str_cont_pos, cont_to_move.get_description(), str_end_pos))
+
         elif cont_to_move is not None and cont_pos is None:
-            self.display_move("Step %s: Move Crane from %s to load container %s to %s" % (self.current_step + 1, str_init_pos, cont_to_move.get_description(), str_end_pos))
-            self.write_to_log("Step %s: Move Crane from %s to load container %s to %s" % (self.current_step + 1, str_init_pos, cont_to_move.get_description(), str_end_pos))
+            self.display_move("Step %s: Pickup container %s from %s then load it to %s" % (self.current_step + 1, cont_to_move.get_description(), str_init_pos, str_end_pos))
+            self.write_to_log("Step %s: Pickup container %s from %s then load it to %s" % (self.current_step + 1, cont_to_move.get_description(), str_init_pos, str_end_pos))
         else:
             self.display_move("Step %s: Move Crane from %s to %s" % (self.current_step + 1, str_init_pos, str_end_pos))
             self.write_to_log("Step %s: Move Crane from %s to %s" % (self.current_step + 1, str_init_pos, str_end_pos))
@@ -460,7 +462,9 @@ class GUI:
 
             self.bayListMain[init][1].config(background="blue")
             self.bayListMain[cont][1].config(background="red")
+            self.bayListMain[cont][1].config(text=cont_to_move.get_description() if cont_to_move is not None else "")
             self.bayListMain[end][1].config(background="green")
+            self.bayListMain[end][1].config(text=cont_to_move.get_description() if cont_to_move is not None else "")
 
         elif not curr_move_end_in_bay and prev_move_end_in_bay:
             if end_pos == (-1, 23):
@@ -474,9 +478,9 @@ class GUI:
             if cont_pos is not None:
                 cont = curr_bay.index_unmap(cont_pos) + curr_bay.get_columns()
                 self.bayListMain[cont][1].config(background="red")
-
+            if cont_to_move not in prev_move_end_in_bay.get_offload_list():
+                self.bufferList[end][1].config(background="green")
             self.bayListMain[init][1].config(background="blue")
-            self.bufferList[end][1].config(background="green")
         elif curr_move_end_in_bay and not prev_move_end_in_bay:
             if end_pos == (-1, 0):
                 end = 0
@@ -510,7 +514,7 @@ class GUI:
         else:
             print("Error in animation")
 
-        self.time_estimate -= curr_cost
+        self.time_estimate = curr_cost
         self.update_time_estimate()
 
     def read_manifest(self):
