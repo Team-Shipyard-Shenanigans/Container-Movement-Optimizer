@@ -349,7 +349,9 @@ class GUI:
             self.write_to_log("Finished calculation, displaying to grid")
 
     def calculate_balance(self):
+        self.write_to_log("Calculating balancing...")
         self.generate_animation(self.optimizer.balance(self.ship_bay, self.buffer))
+        self.write_to_log("Finished calculation, displaying to grid")
 
     def get_root(self):
         return self.root
