@@ -8,7 +8,7 @@ The Container Movement Optimizer is our project for our Artificial Intelligence 
 ### Development Tools
 The CMO was built using Python. Python was chosen due to our groups common knowledge of the language, with the hopes that it would reduce development overhead, even if it meant a cost towards performance.
 
-We utilized the following libraries/modules in order assist us with the project.
+We utilized the following orimary libraries/modules in order assist us with the project.
 
 * [Tkinter](https://docs.python.org/3/library/tkinter.html#module-tkinter), natively packaged with Python, was used to implement the GUI.
 * [PyTest](https://docs.pytest.org/en/7.2.x/), used for our unit testing suite.
