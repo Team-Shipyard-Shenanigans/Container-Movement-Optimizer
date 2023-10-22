@@ -17,6 +17,11 @@ We utilized the following orimary libraries/modules in order assist us with the 
 ### Solution Calculation and Heuristics
 The CMO relies on A* with heuristics to search the solution space of move sequences to find the sequence that minimizes the time spent. The heuristics used for loading and unloading search relies on the knowledge of which containers need to be moved, and how their current location in the ship bay and buffer impacts the minimum number of moves required to load or unload those containers. 
 
+Let $W_l, W_r$ be defined as the sum of the waits of the containers of the left partition and right partition of the ship. A ship is considered balanced if the following inequality is true
+```math
+\frac{\min(W_l, W_r)}{\max(W_l,W_r)} >= 0.9 
+```
+
 The load/unload heuristic $L$ was defined as follows. Let $n$ be the number of containers we need to offload. Let $m$ be the number of containers we need to onload, and let $T(i)$ be the cost to transfer a container between the ship and buffer. 
 
 ```math
